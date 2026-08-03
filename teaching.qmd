@@ -1,16 +1,14 @@
 ---
-title: "Teaching"
+title: "Teaching Assistant"
 ---
 
 ## Current courses
 
-### Course title
-
-- Institution and term
-- Course level
-- [Syllabus](#)
-- [Materials](#)
+- Robust and Stochastic Portfolio Optimization, Fall 2026
+- Mathematical Statistics, Fall 2026
+- Linear Algebra, Fall 2026
 
 ## Past courses
 
-- Course title, Institution, Year
+- Special Topics on Financial Engineering, Spring 2026
+- Introduction to Information Engineering, Spring 2025

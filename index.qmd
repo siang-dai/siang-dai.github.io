@@ -19,19 +19,16 @@ about:
 
 ## About me
 
-Write a concise academic biography here. A useful structure is: current position, research fields, methods, and the types of questions you study.
+
 
 ## Research interests
 
-- Financial econometrics and derivatives
-- Implied volatility and option markets
-- Computational finance and reproducible research
+- Risk Measures
+- Large Deviations
+- Optimization
 
 ## Current work
 
-Briefly describe one or two active projects. Link to papers, code, or data when they are publicly available.
 
 ## News
 
-- **2026-08** — Launched this academic website.
-- **2026-08** — Released the TXO VIX term-structure project.

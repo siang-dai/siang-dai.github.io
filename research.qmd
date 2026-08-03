@@ -2,20 +2,7 @@
 title: "Research"
 ---
 
-## Research agenda
-
-Describe the central questions connecting your projects.
-
 ## Working papers
 
-### Paper title
-
-**Coauthors:** Name One, Name Two  
-**Status:** Working paper  
-**Abstract:** Add a short abstract.  
-[PDF](#) · [Code](#) · [Slides](#)
-
-## Work in progress
-
-- Project title — one-sentence description.
-- Project title — one-sentence description.
+- Asymptotic behavior of optimal VaR/CVaR portfolio under elliptical distributions
+- Importance sampling and large deviations for VaR/CVaR Estimation (Supported by NSTC Grant No. 115-2813-C-007-108-H)

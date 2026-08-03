@@ -2,9 +2,9 @@
 title: "Projects"
 ---
 
-## TXO VIX-style term structure
+## TXO VIX term structure
 
-This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VIX-style variance for each expiration, and publishes a daily static term-structure chart.
+This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VIX expiration, and publishes a daily static term-structure chart. The methodology is based on the CBOE VIX calculation, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
 <div class="project-card">
   <p id="vix-status">Loading the latest chart…</p>
@@ -44,4 +44,4 @@ This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VI
 
 ## Reproducibility
 
-The code repository contains the data downloader, cleaning rules, calculation function, workflow configuration, and generated output. The chart is refreshed on weekdays by GitHub Actions.
+The code repository contains the data downloader, cleaning rules, calculation function, workflow configuration, and generated output. The chart is refreshed on weekdays by GitHub Actions. The data is downloaded from the Taiwan Futures Exchange (TXO) website, see [TXO Option Quotes](https://www.taifex.com.tw/cht/3/optDailyMarketSummary).

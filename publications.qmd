@@ -4,12 +4,8 @@ title: "Publications"
 
 ## Journal articles
 
-1. **Siang-Dai**, Coauthor (2026). “Article title.” *Journal Name*. [DOI](#) · [PDF](#) · [Code](#)
+<!-- 1. **Siang-Dai**, Coauthor (2026). “Article title.” *Journal Name*. [DOI](#) · [PDF](#) · [Code](#) -->
 
 ## Other publications
 
-1. **Siang-Dai** (2025). “Report or chapter title.” Publisher or institution.
-
-## Citation note
-
-Use a consistent citation style. For a longer publication list, consider maintaining a BibTeX file and generating this page automatically later.
+<!-- 1. **Siang-Dai** (2025). “Report or chapter title.” Publisher or institution. -->
