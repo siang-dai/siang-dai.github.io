@@ -1,0 +1,45 @@
+project:
+  type: website
+  output-dir: _site
+
+website:
+  title: "Siang-Dai"
+  site-url: "https://siang-dai.github.io"
+  description: "Academic website of Siang-Dai"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: research.qmd
+        text: Research
+      - href: publications.qmd
+        text: Publications
+      - href: teaching.qmd
+        text: Teaching
+      - href: projects.qmd
+        text: Projects
+      - href: cv.qmd
+        text: CV
+    right:
+      - icon: github
+        href: "https://github.com/siang-dai"
+        aria-label: GitHub
+      - icon: envelope
+        href: "mailto:siangdai.ryan@gmail.com"
+        aria-label: Email
+  page-footer:
+    left: "© 2026 Siang-Dai"
+    right: "Built with Quarto and GitHub Pages"
+
+format:
+  html:
+    theme:
+      light: cosmo
+      dark: darkly
+    css: styles.css
+    toc: true
+    link-external-newwindow: true
+    smooth-scroll: true
+
+execute:
+  freeze: auto

@@ -1,0 +1,37 @@
+---
+title: "Siang-Dai"
+subtitle: "Undergraduate · Department of Quantitative Finance · National Tsing Hua University"
+about:
+  template: trestles
+  image: images/profile-placeholder.svg
+  image-shape: round
+  links:
+    - icon: envelope
+      text: Email
+      href: mailto:siangdai.ryan@gmail.com
+    - icon: github
+      text: GitHub
+      href: https://github.com/siang-dai
+    - icon: mortarboard
+      text: Google Scholar
+      href: https://scholar.google.com/
+---
+
+## About me
+
+Write a concise academic biography here. A useful structure is: current position, research fields, methods, and the types of questions you study.
+
+## Research interests
+
+- Financial econometrics and derivatives
+- Implied volatility and option markets
+- Computational finance and reproducible research
+
+## Current work
+
+Briefly describe one or two active projects. Link to papers, code, or data when they are publicly available.
+
+## News
+
+- **2026-08** — Launched this academic website.
+- **2026-08** — Released the TXO VIX term-structure project.

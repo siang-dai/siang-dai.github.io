@@ -1,0 +1,47 @@
+---
+title: "Projects"
+---
+
+## TXO VIX-style term structure
+
+This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VIX-style variance for each expiration, and publishes a daily static term-structure chart.
+
+<div class="project-card">
+  <p id="vix-status">Loading the latest chart…</p>
+  <img id="vix-chart" alt="Latest TXO VIX-style implied-volatility term structure" style="width:100%; max-width:960px;">
+  <p>
+    <a href="https://github.com/siang-dai/txo-vix-term-structure">Source code and methodology</a>
+  </p>
+</div>
+
+<script>
+(() => {
+  const user = "siang-dai";
+  const repo = "txo-vix-term-structure";
+  const stamp = Date.now();
+  const rawBase = `https://raw.githubusercontent.com/${user}/${repo}/main/output`;
+  const chart = document.getElementById("vix-chart");
+  const status = document.getElementById("vix-status");
+
+  chart.src = `${rawBase}/latest_term_structure.png?t=${stamp}`;
+  chart.onerror = () => {
+    status.textContent = "The chart is not available yet. Run the repository's daily workflow once.";
+  };
+
+  fetch(`${rawBase}/latest.json?t=${stamp}`)
+    .then(response => {
+      if (!response.ok) throw new Error("metadata unavailable");
+      return response.json();
+    })
+    .then(meta => {
+      status.textContent = `Latest available trading date: ${meta.as_of_date} · Generated: ${meta.generated_at_utc} UTC`;
+    })
+    .catch(() => {
+      status.textContent = "Latest automatically generated chart.";
+    });
+})();
+</script>
+
+## Reproducibility
+
+The code repository contains the data downloader, cleaning rules, calculation function, workflow configuration, and generated output. The chart is refreshed on weekdays by GitHub Actions.

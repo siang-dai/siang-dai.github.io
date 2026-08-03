@@ -1,0 +1,31 @@
+:root {
+  --academic-accent: #284b63;
+  --academic-soft: #f4f7f9;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.015em;
+}
+
+.project-card {
+  background: var(--academic-soft);
+  border: 1px solid rgba(40, 75, 99, 0.18);
+  border-radius: 14px;
+  padding: 1.25rem;
+  margin: 1rem 0 2rem;
+}
+
+.project-card img {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.about-entity .about-link {
+  border-color: var(--academic-accent);
+}

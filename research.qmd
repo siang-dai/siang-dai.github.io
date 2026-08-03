@@ -1,0 +1,21 @@
+---
+title: "Research"
+---
+
+## Research agenda
+
+Describe the central questions connecting your projects.
+
+## Working papers
+
+### Paper title
+
+**Coauthors:** Name One, Name Two  
+**Status:** Working paper  
+**Abstract:** Add a short abstract.  
+[PDF](#) · [Code](#) · [Slides](#)
+
+## Work in progress
+
+- Project title — one-sentence description.
+- Project title — one-sentence description.

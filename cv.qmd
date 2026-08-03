@@ -1,0 +1,30 @@
+---
+title: "Curriculum Vitae"
+---
+
+## Appointments
+
+- **Position**, Department, University, Year–present
+
+## Education
+
+- **Ph.D. in Field**, University, Year
+- **M.A./M.S. in Field**, University, Year
+- **B.A./B.S. in Field**, University, Year
+
+## Publications
+
+See the [Publications](publications.qmd) page.
+
+## Presentations
+
+- Conference or seminar, presentation title, year
+
+## Service and awards
+
+- Award, institution, year
+- Professional service item, year
+
+Add a PDF file such as `files/cv.pdf`, then place a link here:
+
+[Download CV as PDF](#)
