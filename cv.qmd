@@ -22,8 +22,10 @@ See the [Publications](publications.qmd) page.
 
 ## Service and awards
 
-<!-- - Award, institution, year
-- Professional service item, year -->
+<!-- - Award, institution, year -->
+- Quantitative Trading Intern, Yuanta Securities, Feb 2026 – Jun 2026
+
+
 <!-- 
 Add a PDF file such as `files/cv.pdf`, then place a link here:
 
