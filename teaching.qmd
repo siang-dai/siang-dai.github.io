@@ -8,7 +8,7 @@ title: "Teaching Assistant"
 - Mathematical Statistics, Fall 2026
 - Linear Algebra, Fall 2026
 
-## Past coursesx
+## Past courses
 
 - Special Topics on Financial Engineering, Spring 2026
 - Introduction to Information Engineering, Spring 2025

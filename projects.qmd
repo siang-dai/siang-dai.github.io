@@ -2,17 +2,36 @@
 title: "Projects"
 ---
 
-## TXO VIX term structure
+## TXO VIX-style term structure
 
-This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VIX expiration, and publishes a daily static term-structure chart. The methodology is based on the CBOE VIX calculation, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
+This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VIX-style variance for each expiration, and publishes a daily static term-structure chart.
 
 <div class="project-card">
-  <p id="vix-status">Loading the latest chart…</p>
+  <p id="vix-status">Loading the latest VIX-style chart…</p>
   <img id="vix-chart" alt="Latest TXO VIX-style implied-volatility term structure" style="width:100%; max-width:960px;">
-  <p>
-    <a href="https://github.com/siang-dai/txo-vix-term-structure">Source code and methodology</a>
-  </p>
 </div>
+
+## TAIEX Futures (TX) IV calibration
+
+The chart inverts Black-76 implied volatility from OTM TXO settlement prices. Only TX futures with exactly the same expiration date are accepted.
+
+<div class="project-card">
+  <p id="tx-status">Loading the latest TX calibration chart…</p>
+  <img id="tx-chart" alt="Latest TXO implied-volatility calibration using same-expiry TX futures" style="width:100%; max-width:1100px;">
+</div>
+
+## Mini-TAIEX Futures (MTX) IV calibration
+
+The chart uses MTX futures independently from TX. Only MTX contracts whose expiration date exactly matches the TXO expiration are accepted.
+
+<div class="project-card">
+  <p id="mtx-status">Loading the latest MTX calibration chart…</p>
+  <img id="mtx-chart" alt="Latest TXO implied-volatility calibration using same-expiry MTX futures" style="width:100%; max-width:1100px;">
+</div>
+
+<p>
+  <a href="https://github.com/siang-dai/txo-vix-term-structure">Source code, data rules, and methodology</a>
+</p>
 
 <script>
 (() => {
@@ -20,28 +39,57 @@ This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VI
   const repo = "txo-vix-term-structure";
   const stamp = Date.now();
   const rawBase = `https://raw.githubusercontent.com/${user}/${repo}/main/output`;
-  const chart = document.getElementById("vix-chart");
-  const status = document.getElementById("vix-status");
 
-  chart.src = `${rawBase}/latest_term_structure.png?t=${stamp}`;
-  chart.onerror = () => {
-    status.textContent = "The chart is not available yet. Run the repository's daily workflow once.";
+  const setChart = (imageId, statusId, filename) => {
+    const image = document.getElementById(imageId);
+    const status = document.getElementById(statusId);
+    image.src = `${rawBase}/${filename}?t=${stamp}`;
+    image.onerror = () => {
+      status.textContent = "The chart is not available yet. Run the repository workflow once.";
+    };
   };
+
+  setChart("vix-chart", "vix-status", "latest_term_structure.png");
+  setChart("tx-chart", "tx-status", "latest_tx_iv_calibration.png");
+  setChart("mtx-chart", "mtx-status", "latest_mtx_iv_calibration.png");
 
   fetch(`${rawBase}/latest.json?t=${stamp}`)
     .then(response => {
-      if (!response.ok) throw new Error("metadata unavailable");
+      if (!response.ok) throw new Error("VIX metadata unavailable");
       return response.json();
     })
     .then(meta => {
-      status.textContent = `Latest available trading date: ${meta.as_of_date} · Generated: ${meta.generated_at_utc} UTC`;
+      document.getElementById("vix-status").textContent =
+        `Latest trading date: ${meta.as_of_date} · Generated in Taiwan: ${meta.generated_at_taipei}`;
     })
     .catch(() => {
-      status.textContent = "Latest automatically generated chart.";
+      document.getElementById("vix-status").textContent = "Latest automatically generated VIX-style chart.";
+    });
+
+  fetch(`${rawBase}/latest_iv.json?t=${stamp}`)
+    .then(response => {
+      if (!response.ok) throw new Error("IV metadata unavailable");
+      return response.json();
+    })
+    .then(meta => {
+      const tx = meta.products.TX;
+      const mtx = meta.products.MTX;
+      document.getElementById("tx-status").textContent =
+        `Latest trading date: ${meta.as_of_date} · ${tx.matched_expirations} matched expirations · ${tx.plotted_points} OTM IV points · Generated in Taiwan: ${meta.generated_at_taipei}`;
+      document.getElementById("mtx-status").textContent =
+        `Latest trading date: ${meta.as_of_date} · ${mtx.matched_expirations} matched expirations · ${mtx.plotted_points} OTM IV points · Generated in Taiwan: ${meta.generated_at_taipei}`;
+    })
+    .catch(() => {
+      document.getElementById("tx-status").textContent = "Latest automatically generated TX IV calibration chart.";
+      document.getElementById("mtx-status").textContent = "Latest automatically generated MTX IV calibration chart.";
     });
 })();
 </script>
 
+## Method note
+
+“IV calibration” here means numerical inversion of the Black-76 formula for each eligible OTM option quote. It is not a parametric volatility-surface model fit. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
+
 ## Reproducibility
 
-The code repository contains the data downloader, cleaning rules, calculation function, workflow configuration, and generated output. The chart is refreshed on weekdays by GitHub Actions. The data is downloaded from the Taiwan Futures Exchange (TXO) website, see [TXO Option Quotes](https://www.taifex.com.tw/cht/3/optDailyMarketSummary).
+The code repository contains the downloader, cleaning rules, VIX-style calculation, Black-76 inversion, tests, generated CSV files, and daily charts. GitHub Actions refreshes the outputs on weekdays.
