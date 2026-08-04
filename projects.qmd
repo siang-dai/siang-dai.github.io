@@ -11,26 +11,26 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
   <img id="vix-chart" alt="Latest TXO VIX-style implied-volatility term structure" style="width:100%; max-width:960px;">
 </div>
 
-## IV (Implied Volatility) Calibration
+## IV (Implied Volatility) Curves
 
 IV is calculated by numerically inverting the Black formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
 
-### TAIEX Futures (TXF) IV calibration
+### TAIEX Futures (TXF) IV curve
 
 Only TXF futures contracts with matching expiration dates are included. The chart updates daily, displaying the four nearest expiration dates.
 
 <div class="project-card">
-  <p id="tx-status">Loading the latest TX calibration chart…</p>
-  <img id="tx-chart" alt="Latest TXO implied-volatility calibration using same-expiry TX futures" style="width:100%; max-width:1100px;">
+  <p id="tx-status">Loading the latest TX curve…</p>
+  <img id="tx-chart" alt="Latest TXO implied-volatility curve using same-expiry TX futures" style="width:100%; max-width:1100px;">
 </div>
 
-### Mini-TAIEX Futures (MXF) IV calibration
+### Mini-TAIEX Futures (MXF) IV curve
 
 Only MXF futures contracts with matching expiration dates are included. The chart updates daily, displaying the four nearest expiration dates.
 
 <div class="project-card">
-  <p id="mtx-status">Loading the latest MXF calibration chart…</p>
-  <img id="mtx-chart" alt="Latest TXO implied-volatility calibration using same-expiry MXF futures" style="width:100%; max-width:1100px;">
+  <p id="mtx-status">Loading the latest MXF curve…</p>
+  <img id="mtx-chart" alt="Latest TXO implied-volatility curve using same-expiry MXF futures" style="width:100%; max-width:1100px;">
 </div>
 
 <!-- <p>
@@ -84,8 +84,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
         `Latest trading date: ${meta.as_of_date} || ${mtx.plotted_points} OTM IV points || Generated in Taiwan: ${meta.generated_at_taipei}`;
     })
     .catch(() => {
-      document.getElementById("tx-status").textContent = "Latest automatically generated TX IV calibration chart.";
-      document.getElementById("mtx-status").textContent = "Latest automatically generated MTX IV calibration chart.";
+      document.getElementById("tx-status").textContent = "Latest automatically generated TX IV curve.";
+      document.getElementById("mtx-status").textContent = "Latest automatically generated MTX IV curve.";
     });
 })();
 </script>
