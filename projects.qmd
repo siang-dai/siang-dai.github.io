@@ -13,7 +13,7 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
 
 ## IV (Implied Volatility) Calibration
 
-IV is calculated by numerically inverting the Black-Scholes formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
+IV is calculated by numerically inverting the Black formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
 
 ### TAIEX Futures (TXF) IV calibration
 
