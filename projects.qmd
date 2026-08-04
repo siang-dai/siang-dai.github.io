@@ -64,7 +64,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
     })
     .then(meta => {
       document.getElementById("vix-status").textContent =
-        `Latest trading date: ${meta.as_of_date} · Generated in Taiwan: ${meta.generated_at_taipei}`;
+        `Latest trading date: ${meta.as_of_date} || Generated in Taiwan: ${meta.generated_at_taipei}`;
     })
     .catch(() => {
       document.getElementById("vix-status").textContent = "Latest automatically generated VIX-style chart.";
@@ -79,9 +79,9 @@ Only MXF futures contracts with matching expiration dates are included. The char
       const tx = meta.products.TX;
       const mtx = meta.products.MTX;
       document.getElementById("tx-status").textContent =
-        `Latest trading date: ${meta.as_of_date} · ${tx.matched_expirations} matched expirations · ${tx.plotted_points} OTM IV points · Generated in Taiwan: ${meta.generated_at_taipei}`;
+        `Latest trading date: ${meta.as_of_date} || ${tx.plotted_points} OTM IV points || Generated in Taiwan: ${meta.generated_at_taipei}`;
       document.getElementById("mtx-status").textContent =
-        `Latest trading date: ${meta.as_of_date} · ${mtx.matched_expirations} matched expirations · ${mtx.plotted_points} OTM IV points · Generated in Taiwan: ${meta.generated_at_taipei}`;
+        `Latest trading date: ${meta.as_of_date} || ${mtx.plotted_points} OTM IV points || Generated in Taiwan: ${meta.generated_at_taipei}`;
     })
     .catch(() => {
       document.getElementById("tx-status").textContent = "Latest automatically generated TX IV calibration chart.";
