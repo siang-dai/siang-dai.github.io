@@ -6,6 +6,6 @@ title: "Publications"
 
 <!-- 1. **Siang-Dai**, Coauthor (2026). “Article title.” *Journal Name*. [DOI](#) · [PDF](#) · [Code](#) -->
 
-## Other publications
+## Conference
 
 <!-- 1. **Siang-Dai** (2025). “Report or chapter title.” Publisher or institution. -->

@@ -16,10 +16,10 @@ website:
         text: Publications
       - href: teaching.qmd
         text: Teaching
-      - href: projects.qmd
-        text: Projects
       - href: cv.qmd
         text: CV
+      - href: projects.qmd
+        text: Taiwan Market Observatory
     right:
       - icon: github
         href: "https://github.com/siang-dai"

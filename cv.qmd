@@ -16,11 +16,11 @@ title: "Curriculum Vitae"
 
 See the [Publications](publications.qmd) page.
 
-## Presentations
-
 <!-- - Conference or seminar, presentation title, year -->
 
-## Service and awards
+## Awards
+
+## Service
 
 <!-- - Award, institution, year -->
 - Quantitative Trading Intern, Yuanta Securities, Feb 2026 – Jun 2026

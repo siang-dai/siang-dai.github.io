@@ -1,37 +1,41 @@
 ---
-title: "Projects"
+title: ""
 ---
 
-## TXO VIX-style term structure
+## VIX (Volatility Index) term structure
 
-This project downloads Taiwan Futures Exchange TXO option quotes, estimates a VIX-style variance for each expiration, and publishes a daily static term-structure chart.
+The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). VIX for each expiration date is calculated, and a daily static term-structure chart is published. The methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
 <div class="project-card">
   <p id="vix-status">Loading the latest VIX-style chart…</p>
   <img id="vix-chart" alt="Latest TXO VIX-style implied-volatility term structure" style="width:100%; max-width:960px;">
 </div>
 
-## TAIEX Futures (TX) IV calibration
+## IV (Implied Volatility) Calibration
 
-The chart inverts Black-76 implied volatility from OTM TXO settlement prices. Only TX futures with exactly the same expiration date are accepted.
+IV is calculated by numerically inverting the Black-Scholes formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
+
+### TAIEX Futures (TXF) IV calibration
+
+Only TXF futures contracts with matching expiration dates are included. The chart updates daily, displaying the four nearest expiration dates.
 
 <div class="project-card">
   <p id="tx-status">Loading the latest TX calibration chart…</p>
   <img id="tx-chart" alt="Latest TXO implied-volatility calibration using same-expiry TX futures" style="width:100%; max-width:1100px;">
 </div>
 
-## Mini-TAIEX Futures (MTX) IV calibration
+### Mini-TAIEX Futures (MXF) IV calibration
 
-The chart uses MTX futures independently from TX. Only MTX contracts whose expiration date exactly matches the TXO expiration are accepted.
+Only MXF futures contracts with matching expiration dates are included. The chart updates daily, displaying the four nearest expiration dates.
 
 <div class="project-card">
-  <p id="mtx-status">Loading the latest MTX calibration chart…</p>
-  <img id="mtx-chart" alt="Latest TXO implied-volatility calibration using same-expiry MTX futures" style="width:100%; max-width:1100px;">
+  <p id="mtx-status">Loading the latest MXF calibration chart…</p>
+  <img id="mtx-chart" alt="Latest TXO implied-volatility calibration using same-expiry MXF futures" style="width:100%; max-width:1100px;">
 </div>
 
-<p>
+<!-- <p>
   <a href="https://github.com/siang-dai/txo-vix-term-structure">Source code, data rules, and methodology</a>
-</p>
+</p> -->
 
 <script>
 (() => {
@@ -86,10 +90,13 @@ The chart uses MTX futures independently from TX. Only MTX contracts whose expir
 })();
 </script>
 
-## Method note
+For detailed contract specifications and expiration dates, please refer to the [TAIFEX Futures Specs](https://www.taifex.com.tw/cht/2/tX) and [TAIFEX Options Specs](https://www.taifex.com.tw/cht/2/tXO).
+
+
+<!-- ## Method note
 
 “IV calibration” here means numerical inversion of the Black-76 formula for each eligible OTM option quote. It is not a parametric volatility-surface model fit. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
 
 ## Reproducibility
 
-The code repository contains the downloader, cleaning rules, VIX-style calculation, Black-76 inversion, tests, generated CSV files, and daily charts. GitHub Actions refreshes the outputs on weekdays.
+The code repository contains the downloader, cleaning rules, VIX-style calculation, Black-76 inversion, tests, generated CSV files, and daily charts. GitHub Actions refreshes the outputs on weekdays. -->

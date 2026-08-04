@@ -26,7 +26,6 @@ about:
 - Large Deviations
 - Optimization
 
-## Current work
 
 
 
