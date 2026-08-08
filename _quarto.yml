@@ -19,7 +19,7 @@ website:
       - href: cv.qmd
         text: CV
       - href: projects.qmd
-        text: Taiwan Market Observatory
+        text: TXO Observatory
     right:
       - icon: github
         href: "https://github.com/siang-dai"
