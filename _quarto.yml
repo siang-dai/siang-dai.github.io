@@ -16,9 +16,9 @@ website:
         text: Publications
       - href: teaching.qmd
         text: Teaching
-      - href: cv.qmd
-        text: CV
-      - href: projects.qmd
+      # - href: cv.qmd
+      #   text: CV
+      - href: txo.qmd
         text: TXO Observatory
     right:
       - icon: github
