@@ -15,7 +15,7 @@ website:
       - href: publications.qmd
         text: Publications
       - href: teaching.qmd
-        text: Teaching
+        text: TA
       # - href: cv.qmd
       #   text: CV
       - href: txo.qmd
