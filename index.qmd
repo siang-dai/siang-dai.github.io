@@ -12,9 +12,9 @@ about:
     - icon: github
       text: GitHub
       href: https://github.com/siang-dai
-    - icon: mortarboard
-      text: Google Scholar
-      href: https://scholar.google.com/
+    # - icon: mortarboard
+    #   text: Google Scholar
+    #   href: https://scholar.google.com/
 ---
 
 ## Biography
