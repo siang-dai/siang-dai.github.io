@@ -6,10 +6,32 @@ title: ""
 
 The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). VIX for each expiration date is calculated, and a daily static term-structure chart is published. The methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
-<div class="project-card">
+<!-- <div class="project-card">
   <p id="vix-status">Loading the latest VIX-style chart…</p>
   <img id="vix-chart" alt="Latest TXO VIX-style implied-volatility term structure" style="width:100%; max-width:960px;">
+</div> -->
+
+```{=html}
+<div class="project-card vix-interactive-card">
+  <p id="vix-status">Loading VIX term-structure history…</p>
+  <div id="vix-term-chart"></div>
+  <div class="vix-slider-wrap">
+    <input id="vix-date-slider"
+           type="range"
+           min="0"
+           max="0"
+           step="1"
+           value="0"
+           disabled
+           aria-label="Select VIX term structure trading date">
+    <div class="vix-slider-labels">
+      <span id="vix-start-date"></span>
+      <strong id="vix-selected-date"></strong>
+      <span id="vix-end-date"></span>
+    </div>
+  </div>
 </div>
+```
 
 ## IV (Implied Volatility) Curves
 
@@ -37,7 +59,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
   <a href="https://github.com/siang-dai/txo-vix-term-structure">Source code, data rules, and methodology</a>
 </p> -->
 
-<script>
+<!-- <script>
 (() => {
   const user = "siang-dai";
   const repo = "txo-vix-term-structure";
@@ -87,6 +109,367 @@ Only MXF futures contracts with matching expiration dates are included. The char
       document.getElementById("tx-status").textContent = "Latest automatically generated TX IV curve.";
       document.getElementById("mtx-status").textContent = "Latest automatically generated MTX IV curve.";
     });
+})();
+</script> -->
+
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@4.1.0/plotly.min.js"></script>
+
+<script>
+(() => {
+  const user = "siang-dai";
+
+  // 注意：這裡改成現在真正的 repo 名稱
+  const repo = "txo-vix-iv";
+
+  const stamp = Date.now();
+
+  const rawRoot =
+    `https://raw.githubusercontent.com/${user}/${repo}/main`;
+
+  const rawOutput = `${rawRoot}/output`;
+  const rawData = `${rawRoot}/data`;
+
+  // ------------------------------------------------------------
+  // VIX interactive term structure
+  // ------------------------------------------------------------
+
+  const chart = document.getElementById("vix-term-chart");
+  const status = document.getElementById("vix-status");
+  const slider = document.getElementById("vix-date-slider");
+
+  const startLabel = document.getElementById("vix-start-date");
+  const selectedLabel = document.getElementById("vix-selected-date");
+  const endLabel = document.getElementById("vix-end-date");
+
+  function parseCsv(text) {
+    const lines = text.trim().split(/\r?\n/);
+    const headers = lines[0].split(",");
+
+    return lines
+      .slice(1)
+      .map(line => {
+        const values = line.split(",");
+
+        const row = Object.fromEntries(
+          headers.map((header, i) => [
+            header,
+            values[i] ?? ""
+          ])
+        );
+
+        return {
+          Date: row.Date.trim(),
+          Expiration_Month: row.Expiration_Month.trim(),
+          Expiration_Date: row.Expiration_Date.trim(),
+          Days_to_Exp: Number(row.Days_to_Exp),
+          Forward: Number(row.Forward),
+          VIX: Number(row.VIX)
+        };
+      })
+      .filter(row =>
+        row.Date &&
+        Number.isFinite(row.Days_to_Exp) &&
+        Number.isFinite(row.VIX)
+      );
+  }
+
+  function isoDate(value) {
+    return new Date(`${value}T00:00:00Z`);
+  }
+
+  function renderTermStructure(rows, date) {
+
+    const daily = rows
+      .filter(row => row.Date === date)
+      .sort((a, b) => a.Days_to_Exp - b.Days_to_Exp);
+
+    const bodyColor =
+      getComputedStyle(document.body).color;
+
+    const trace = {
+      type: "scatter",
+
+      mode: "lines+markers",
+
+      x: daily.map(row => row.Days_to_Exp),
+      y: daily.map(row => row.VIX),
+
+      // 保留給 hovertemplate 使用
+      text: daily.map(row => row.Expiration_Month),
+
+      customdata: daily.map(row => [
+        row.Expiration_Date,
+        row.Forward
+      ]),
+
+      hovertemplate:
+        "<b>%{text}</b>" +
+        "<br>Expiration: %{customdata[0]}" +
+        "<br>Days to expiration: %{x:.0f}" +
+        "<br>VIX-style IV: %{y:.2f}%" +
+        "<br>Forward: %{customdata[1]:,.2f}" +
+        "<extra></extra>",
+
+      line: {
+        width: 2.4
+      },
+
+      marker: {
+        size: 8
+      }
+    };
+
+    const layout = {
+
+      title: {
+        text:
+          `TXO VIX Term Structure — ${date}`,
+        x: 0.5
+      },
+
+      xaxis: {
+        title: "Days to expiration",
+        rangemode: "tozero",
+        gridcolor: "rgba(127,127,127,0.22)"
+      },
+
+      yaxis: {
+        title: "Annualized implied volatility (%)",
+        gridcolor: "rgba(127,127,127,0.22)"
+      },
+
+      margin: {
+        l: 70,
+        r: 25,
+        t: 70,
+        b: 65
+      },
+
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+
+      font: {
+        color: bodyColor
+      },
+
+      hovermode: "closest",
+
+      showlegend: false,
+
+      autosize: true
+    };
+
+    Plotly.react(
+      chart,
+      [trace],
+      layout,
+      {
+        responsive: true,
+        displaylogo: false,
+        scrollZoom: false
+      }
+    );
+
+    selectedLabel.textContent = date;
+
+    status.textContent =
+      `Trading date: ${date} · ` +
+      `${daily.length} expirations · ` +
+      `move the slider to inspect the last 30 calendar days.`;
+  }
+
+  fetch(
+    `${rawData}/vix_term_structure_history.csv?t=${stamp}`
+  )
+    .then(response => {
+
+      if (!response.ok) {
+        throw new Error("VIX history unavailable");
+      }
+
+      return response.text();
+    })
+
+    .then(text => {
+
+      const rows = parseCsv(text);
+
+      const allDates =
+        [...new Set(rows.map(row => row.Date))]
+          .sort();
+
+      if (!allDates.length) {
+        throw new Error("No VIX history rows");
+      }
+
+      // 最新有資料的交易日
+      const latestDate =
+        allDates[allDates.length - 1];
+
+      // 最近 30 calendar days
+      // 包含 latestDate，所以往前減 29 天
+      const cutoff = isoDate(latestDate);
+
+      cutoff.setUTCDate(
+        cutoff.getUTCDate() - 29
+      );
+
+      // 只保留這 30 天內真正存在資料的交易日
+      const recentDates =
+        allDates.filter(
+          date => isoDate(date) >= cutoff
+        );
+
+      slider.min = "0";
+      slider.max =
+        String(recentDates.length - 1);
+
+      slider.step = "1";
+
+      // 預設顯示最新一天
+      slider.value =
+        String(recentDates.length - 1);
+
+      slider.disabled = false;
+
+      startLabel.textContent =
+        recentDates[0];
+
+      endLabel.textContent =
+        recentDates[recentDates.length - 1];
+
+      function updateFromSlider() {
+
+        const selectedDate =
+          recentDates[
+            Number(slider.value)
+          ];
+
+        renderTermStructure(
+          rows,
+          selectedDate
+        );
+      }
+
+      // 拖曳時即時更新
+      slider.addEventListener(
+        "input",
+        updateFromSlider
+      );
+
+      updateFromSlider();
+    })
+
+    .catch(error => {
+
+      console.error(error);
+
+      status.textContent =
+        "Interactive history could not be loaded; " +
+        "showing the latest static chart instead.";
+
+      // fallback：如果 CSV 抓不到，
+      // 還是顯示原本 PNG
+      chart.innerHTML = `
+        <img
+          src="${rawOutput}/latest_term_structure.png?t=${stamp}"
+          alt="Latest TXO VIX term structure"
+          style="width:100%; max-width:960px;"
+        >
+      `;
+
+      slider.disabled = true;
+    });
+
+
+  // ------------------------------------------------------------
+  // TX / MXF IV charts
+  // 保持你原本的靜態圖功能
+  // ------------------------------------------------------------
+
+  function setStaticChart(
+    imageId,
+    statusId,
+    filename
+  ) {
+
+    const image =
+      document.getElementById(imageId);
+
+    const chartStatus =
+      document.getElementById(statusId);
+
+    image.src =
+      `${rawOutput}/${filename}?t=${stamp}`;
+
+    image.onerror = () => {
+
+      chartStatus.textContent =
+        "The chart is not available yet. " +
+        "Run the repository workflow once.";
+    };
+  }
+
+  setStaticChart(
+    "tx-chart",
+    "tx-status",
+    "latest_tx_iv_calibration.png"
+  );
+
+  setStaticChart(
+    "mtx-chart",
+    "mtx-status",
+    "latest_mtx_iv_calibration.png"
+  );
+
+
+  fetch(
+    `${rawOutput}/latest_iv.json?t=${stamp}`
+  )
+    .then(response => {
+
+      if (!response.ok) {
+        throw new Error(
+          "IV metadata unavailable"
+        );
+      }
+
+      return response.json();
+    })
+
+    .then(meta => {
+
+      const tx = meta.products.TX;
+      const mtx = meta.products.MTX;
+
+      document.getElementById(
+        "tx-status"
+      ).textContent =
+        `Latest trading date: ${meta.as_of_date} || ` +
+        `${tx.plotted_points} OTM IV points || ` +
+        `Generated in Taiwan: ${meta.generated_at_taipei}`;
+
+      document.getElementById(
+        "mtx-status"
+      ).textContent =
+        `Latest trading date: ${meta.as_of_date} || ` +
+        `${mtx.plotted_points} OTM IV points || ` +
+        `Generated in Taiwan: ${meta.generated_at_taipei}`;
+    })
+
+    .catch(() => {
+
+      document.getElementById(
+        "tx-status"
+      ).textContent =
+        "Latest automatically generated TX IV curve.";
+
+      document.getElementById(
+        "mtx-status"
+      ).textContent =
+        "Latest automatically generated MTX IV curve.";
+    });
+
 })();
 </script>
 
