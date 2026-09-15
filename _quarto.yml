@@ -20,6 +20,8 @@ website:
       #   text: CV
       - href: txo.qmd
         text: TXO Observatory
+      - href: spx.qmd
+        text: SPX Observatory
     right:
       - icon: github
         href: "https://github.com/siang-dai"
