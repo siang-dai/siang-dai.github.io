@@ -4,8 +4,8 @@ page-layout: full
 ---
 
 ## SPX VIX term structure
-
-This page uses Cboe SPX/SPXW end-of-day option quotes to calculate a VIX estimate for every usable expiration. The calculation follows the single-term structure of the Cboe VIX methodology, but these values are research estimates and are **not official Cboe indices**.
+<!-- 
+This page uses Cboe SPX/SPXW end-of-day option quotes to calculate a VIX estimate for every usable expiration. The calculation follows the single-term structure of the Cboe VIX methodology, but these values are research estimates and are **not official Cboe indices**. -->
 
 ```{=html}
 <div class="project-card spx-interactive-card">
@@ -229,11 +229,11 @@ This page uses Cboe SPX/SPXW end-of-day option quotes to calculate a VIX estimat
     });
 })();
 </script>
+<!-- 
+The source data is the Cboe Proprietary Index Marking Prices file. The repository stores derived term-structure values rather than publishing the raw Cboe file. Risk-free rates are based on the U.S. Treasury CMT curve. -->
 
-The source data is the Cboe Proprietary Index Marking Prices file. The repository stores derived term-structure values rather than publishing the raw Cboe file. Risk-free rates are based on the U.S. Treasury CMT curve.
-
-## Related
+<!-- ## Related
 
 - [Cboe Proprietary Index Marking Prices](https://www.cboe.com/us/options/market_statistics/proprietary_index_marking_prices/)
 - [Cboe VIX methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf)
-- [Source repository](https://github.com/siang-dai/spx-vix-term-structure)
+- [Source repository](https://github.com/siang-dai/spx-vix-term-structure) -->
