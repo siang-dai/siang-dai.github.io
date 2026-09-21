@@ -51,8 +51,6 @@ The nearest-expiry VIX is shown against the TAIEX close over the latest month, i
 </div>
 ```
 
-:::
-
 ## IV (Implied Volatility) Curves
 
 IV is calculated by numerically inverting the Black formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
