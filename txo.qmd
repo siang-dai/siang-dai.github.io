@@ -35,7 +35,7 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
 
 ### Front-expiry VIX vs TAIEX
 
-The nearest-expiry VIX is shown against the TAIEX close over the latest month, illustrating how short-dated implied volatility moves with the index.
+The nearest-expiry VIX is shown against the TAIEX close over the latest month, illustrating how short-dated VIX moves with the index.
 
 ```{=html}
 <div class="project-card">
