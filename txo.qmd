@@ -33,6 +33,28 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
 </div>
 ```
 
+### Front-expiry VIX vs TAIEX
+
+The nearest-expiry VIX is shown against the TAIEX close over the latest month, illustrating how short-dated implied volatility moves with the index.
+
+::: {.column-page}
+
+```{=html}
+<div class="project-card">
+  <p id="front-vix-taiex-status">
+    Nearest-expiry VIX versus the TAIEX close over the latest 30 calendar days.
+  </p>
+
+  <img
+    id="front-vix-taiex-chart"
+    alt="TAIEX close and nearest-expiry TXO VIX-style implied volatility over the latest month"
+    style="width:100%;"
+  >
+</div>
+```
+
+:::
+
 ## IV (Implied Volatility) Curves
 
 IV is calculated by numerically inverting the Black formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
@@ -420,6 +442,12 @@ Only MXF futures contracts with matching expiration dates are included. The char
     "mtx-chart",
     "mtx-status",
     "latest_mtx_iv_calibration.png"
+  );
+
+  setStaticChart(
+    "front-vix-taiex-chart",
+    "front-vix-taiex-status",
+    "latest_front_vix_vs_taiex.png"
   );
 
 
