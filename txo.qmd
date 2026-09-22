@@ -35,21 +35,22 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
 
 ### Front-expiry VIX vs TAIEX
 
-The nearest-expiry VIX is shown against the TAIEX close over the latest month, illustrating how short-dated VIX moves with the index.
+The nearest-expiry VIX is shown against the TAIEX close over the latest month, illustrating how short-dated implied volatility moves with the index.
 
 ```{=html}
 <div class="project-card">
   <p id="front-vix-taiex-status">
-    Nearest-expiry VIX versus the TAIEX close over the latest 30 calendar days.
+    Loading TAIEX and nearest-expiry VIX history…
   </p>
 
-  <img
+  <div
     id="front-vix-taiex-chart"
-    alt="TAIEX close and nearest-expiry TXO VIX-style implied volatility over the latest month"
-    style="width:100%;"
-  >
+    style="width:100%; height:600px;"
+  ></div>
 </div>
 ```
+
+
 
 ## IV (Implied Volatility) Curves
 
@@ -397,13 +398,261 @@ Only MXF futures contracts with matching expiration dates are included. The char
       `;
 
       slider.disabled = true;
+
     });
 
 
-  // ------------------------------------------------------------
-  // TX / MXF IV charts
-  // 保持你原本的靜態圖功能
-  // ------------------------------------------------------------
+
+// ------------------------------------------------------------
+// Front-expiry VIX vs TAIEX
+// ------------------------------------------------------------
+
+const frontChart =
+  document.getElementById("front-vix-taiex-chart");
+
+const frontStatus =
+  document.getElementById("front-vix-taiex-status");
+
+fetch(
+  `${rawOutput}/latest_front_vix_vs_taiex.json?t=${stamp}`
+)
+  .then(response => {
+
+    if (!response.ok) {
+      throw new Error(
+        "Front-expiry VIX / TAIEX data unavailable"
+      );
+    }
+
+    return response.json();
+  })
+
+  .then(payload => {
+
+    const rows = payload.data;
+
+    if (!rows || !rows.length) {
+      throw new Error("No observations");
+    }
+
+    const dates =
+      rows.map(row => row.Date);
+
+    const taiex =
+      rows.map(row => Number(row.TAIEX_Close));
+
+    const vix =
+      rows.map(row => Number(row.Front_VIX));
+
+    const contracts =
+      rows.map(row => row.Contract);
+
+
+    // 上圖：TAIEX
+    const taiexTrace = {
+
+      type: "scatter",
+
+      mode: "lines+markers",
+
+      x: dates,
+      y: taiex,
+
+      xaxis: "x",
+      yaxis: "y",
+
+      name: "TAIEX Close",
+
+      marker: {
+        size: 6
+      },
+
+      line: {
+        width: 2
+      },
+
+      hovertemplate:
+        "<b>%{x}</b>" +
+        "<br>TAIEX Close: %{y:,.2f}" +
+        "<extra></extra>"
+    };
+
+
+    // 下圖：Front-expiry VIX
+    const vixTrace = {
+
+      type: "scatter",
+
+      mode: "lines+markers",
+
+      x: dates,
+      y: vix,
+
+      xaxis: "x2",
+      yaxis: "y2",
+
+      name: "Front-expiry VIX-style IV",
+
+      customdata: contracts,
+
+      marker: {
+        size: 6
+      },
+
+      line: {
+        width: 2
+      },
+
+      hovertemplate:
+        "<b>%{x}</b>" +
+        "<br>Contract: %{customdata}" +
+        "<br>VIX-style IV: %{y:.2f}%" +
+        "<extra></extra>"
+    };
+
+
+    const frontBodyColor =
+      getComputedStyle(document.body).color;
+
+
+    const frontLayout = {
+
+      title: {
+        text:
+          "TAIEX vs Front-expiry VIX-style IV",
+        x: 0.5,
+        font: {
+          size: 19
+        }
+      },
+
+
+      // 上圖 x 軸
+      xaxis: {
+
+        domain: [0, 1],
+
+        anchor: "y",
+
+        type: "date",
+
+        showticklabels: false,
+
+        showgrid: false
+      },
+
+
+      // 上圖 y 軸
+      yaxis: {
+
+        domain: [0.57, 1],
+
+        title: "TAIEX Close",
+
+        gridcolor:
+          "rgba(127,127,127,0.18)",
+
+        automargin: true
+      },
+
+
+      // 下圖 x 軸
+      xaxis2: {
+
+        domain: [0, 1],
+
+        anchor: "y2",
+
+        matches: "x",
+
+        type: "date",
+
+        title: {
+          text: "Trading Date",
+          standoff: 10
+        },
+
+        tickformat: "%m-%d",
+
+        showgrid: false,
+
+        automargin: true
+      },
+
+
+      // 下圖 y 軸
+      yaxis2: {
+
+        domain: [0, 0.42],
+
+        title: "VIX-style IV (%)",
+
+        gridcolor:
+          "rgba(127,127,127,0.18)",
+
+        automargin: true
+      },
+
+
+      margin: {
+        l: 75,
+        r: 35,
+        t: 65,
+        b: 65
+      },
+
+      paper_bgcolor:
+        "rgba(0,0,0,0)",
+
+      plot_bgcolor:
+        "rgba(0,0,0,0)",
+
+      font: {
+        color: frontBodyColor
+      },
+
+      showlegend: false,
+
+      hovermode: "closest",
+
+      autosize: true
+    };
+
+
+    Plotly.react(
+      frontChart,
+      [
+        taiexTrace,
+        vixTrace
+      ],
+      frontLayout,
+      {
+        responsive: true,
+        displaylogo: false,
+        scrollZoom: false
+      }
+    );
+
+
+    frontStatus.textContent =
+      `Latest observation: ${payload.as_of_date} · ` +
+      `move the cursor over the lines to inspect values.`;
+  })
+
+  .catch(error => {
+
+    console.error(error);
+
+    frontStatus.textContent =
+      "TAIEX / front-expiry VIX history could not be loaded.";
+  });
+
+
+
+// ------------------------------------------------------------
+// TX / MXF IV charts
+// 保持你原本的靜態圖功能
+// ------------------------------------------------------------
 
   function setStaticChart(
     imageId,
@@ -440,11 +689,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
     "latest_mtx_iv_calibration.png"
   );
 
-  setStaticChart(
-    "front-vix-taiex-chart",
-    "front-vix-taiex-status",
-    "latest_front_vix_vs_taiex.png"
-  );
+
 
 
   fetch(
