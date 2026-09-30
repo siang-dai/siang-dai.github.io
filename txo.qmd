@@ -6,29 +6,44 @@ title: ""
 
 The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). VIX for each expiration date is calculated, and a daily static term-structure chart is published. The methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
-<!-- <div class="project-card">
-  <p id="vix-status">Loading the latest VIX-style chart…</p>
-  <img id="vix-chart" alt="Latest TXO VIX-style implied-volatility term structure" style="width:100%; max-width:960px;">
-</div> -->
-
 ```{=html}
 <div class="project-card vix-interactive-card">
   <p id="vix-status">Loading VIX term-structure history…</p>
+
   <div id="vix-term-chart"></div>
+
   <div class="vix-slider-wrap">
-    <input id="vix-date-slider"
-           type="range"
-           min="0"
-           max="0"
-           step="1"
-           value="0"
-           disabled
-           aria-label="Select VIX term structure trading date">
+    <input
+      id="vix-date-slider"
+      type="range"
+      min="0"
+      max="0"
+      step="1"
+      value="0"
+      disabled
+      aria-label="Select VIX term structure trading date"
+    >
+
     <div class="vix-slider-labels">
       <span id="vix-start-date"></span>
       <strong id="vix-selected-date"></strong>
       <span id="vix-end-date"></span>
     </div>
+  </div>
+
+  <div
+    style="
+      border-top: 1px solid rgba(127,127,127,0.25);
+      margin-top: 1rem;
+      padding-top: 1rem;
+    "
+  >
+    <p id="vix-volume-status">Loading TXO option volume…</p>
+
+    <div
+      id="vix-volume-chart"
+      style="width:100%; height:340px;"
+    ></div>
   </div>
 </div>
 ```
@@ -49,8 +64,6 @@ The nearest-expiry VIX is shown against the TAIEX close over the latest month, i
   ></div>
 </div>
 ```
-
-
 
 ## IV (Implied Volatility) Curves
 
@@ -74,72 +87,13 @@ Only MXF futures contracts with matching expiration dates are included. The char
   <img id="mtx-chart" alt="Latest TXO implied-volatility curve using same-expiry MXF futures" style="width:100%; max-width:1100px;">
 </div>
 
-<!-- <p>
-  <a href="https://github.com/siang-dai/txo-vix-term-structure">Source code, data rules, and methodology</a>
-</p> -->
-
-<!-- <script>
-(() => {
-  const user = "siang-dai";
-  const repo = "txo-vix-term-structure";
-  const stamp = Date.now();
-  const rawBase = `https://raw.githubusercontent.com/${user}/${repo}/main/output`;
-
-  const setChart = (imageId, statusId, filename) => {
-    const image = document.getElementById(imageId);
-    const status = document.getElementById(statusId);
-    image.src = `${rawBase}/${filename}?t=${stamp}`;
-    image.onerror = () => {
-      status.textContent = "The chart is not available yet. Run the repository workflow once.";
-    };
-  };
-
-  setChart("vix-chart", "vix-status", "latest_term_structure.png");
-  setChart("tx-chart", "tx-status", "latest_tx_iv_calibration.png");
-  setChart("mtx-chart", "mtx-status", "latest_mtx_iv_calibration.png");
-
-  fetch(`${rawBase}/latest.json?t=${stamp}`)
-    .then(response => {
-      if (!response.ok) throw new Error("VIX metadata unavailable");
-      return response.json();
-    })
-    .then(meta => {
-      document.getElementById("vix-status").textContent =
-        `Latest trading date: ${meta.as_of_date} || Generated in Taiwan: ${meta.generated_at_taipei}`;
-    })
-    .catch(() => {
-      document.getElementById("vix-status").textContent = "Latest automatically generated VIX-style chart.";
-    });
-
-  fetch(`${rawBase}/latest_iv.json?t=${stamp}`)
-    .then(response => {
-      if (!response.ok) throw new Error("IV metadata unavailable");
-      return response.json();
-    })
-    .then(meta => {
-      const tx = meta.products.TX;
-      const mtx = meta.products.MTX;
-      document.getElementById("tx-status").textContent =
-        `Latest trading date: ${meta.as_of_date} || ${tx.plotted_points} OTM IV points || Generated in Taiwan: ${meta.generated_at_taipei}`;
-      document.getElementById("mtx-status").textContent =
-        `Latest trading date: ${meta.as_of_date} || ${mtx.plotted_points} OTM IV points || Generated in Taiwan: ${meta.generated_at_taipei}`;
-    })
-    .catch(() => {
-      document.getElementById("tx-status").textContent = "Latest automatically generated TX IV curve.";
-      document.getElementById("mtx-status").textContent = "Latest automatically generated MTX IV curve.";
-    });
-})();
-</script> -->
-
-<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@4.1.0/plotly.min.js"></script>
+```{=html}
+<script src="https://cdn.plot.ly/plotly-4.1.1.min.js"></script>
 
 <script>
 (() => {
   const user = "siang-dai";
-
-  // 注意：這裡改成現在真正的 repo 名稱
   const repo = "txo-vix-iv";
-
   const stamp = Date.now();
 
   const rawRoot =
@@ -149,16 +103,32 @@ Only MXF futures contracts with matching expiration dates are included. The char
   const rawData = `${rawRoot}/data`;
 
   // ------------------------------------------------------------
-  // VIX interactive term structure
+  // VIX interactive term structure + option volume
   // ------------------------------------------------------------
 
-  const chart = document.getElementById("vix-term-chart");
-  const status = document.getElementById("vix-status");
-  const slider = document.getElementById("vix-date-slider");
+  const chart =
+    document.getElementById("vix-term-chart");
 
-  const startLabel = document.getElementById("vix-start-date");
-  const selectedLabel = document.getElementById("vix-selected-date");
-  const endLabel = document.getElementById("vix-end-date");
+  const status =
+    document.getElementById("vix-status");
+
+  const slider =
+    document.getElementById("vix-date-slider");
+
+  const startLabel =
+    document.getElementById("vix-start-date");
+
+  const selectedLabel =
+    document.getElementById("vix-selected-date");
+
+  const endLabel =
+    document.getElementById("vix-end-date");
+
+  const volumeChart =
+    document.getElementById("vix-volume-chart");
+
+  const volumeStatus =
+    document.getElementById("vix-volume-status");
 
   function parseCsv(text) {
     const lines = text.trim().split(/\r?\n/);
@@ -171,15 +141,15 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
         const row = Object.fromEntries(
           headers.map((header, i) => [
-            header,
+            header.trim(),
             values[i] ?? ""
           ])
         );
 
         return {
-          Date: row.Date.trim(),
-          Expiration_Month: row.Expiration_Month.trim(),
-          Expiration_Date: row.Expiration_Date.trim(),
+          Date: String(row.Date || "").trim(),
+          Expiration_Month: String(row.Expiration_Month || "").trim(),
+          Expiration_Date: String(row.Expiration_Date || "").trim(),
           Days_to_Exp: Number(row.Days_to_Exp),
           Forward: Number(row.Forward),
           VIX: Number(row.VIX)
@@ -192,12 +162,44 @@ Only MXF futures contracts with matching expiration dates are included. The char
       );
   }
 
+  function parseVolumeCsv(text) {
+    if (!text || !text.trim()) {
+      return [];
+    }
+
+    const lines = text.trim().split(/\r?\n/);
+    const headers = lines[0].split(",");
+
+    return lines
+      .slice(1)
+      .map(line => {
+        const values = line.split(",");
+
+        const row = Object.fromEntries(
+          headers.map((header, i) => [
+            header.trim(),
+            values[i] ?? ""
+          ])
+        );
+
+        return {
+          Date: String(row.Date || "").trim(),
+          Expiration_Month: String(row.Expiration_Month || "").trim(),
+          Volume: Number(row.Volume)
+        };
+      })
+      .filter(row =>
+        row.Date &&
+        row.Expiration_Month &&
+        Number.isFinite(row.Volume)
+      );
+  }
+
   function isoDate(value) {
     return new Date(`${value}T00:00:00Z`);
   }
 
   function renderTermStructure(rows, date) {
-
     const daily = rows
       .filter(row => row.Date === date)
       .sort((a, b) => a.Days_to_Exp - b.Days_to_Exp);
@@ -207,74 +209,56 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
     const trace = {
       type: "scatter",
-
       mode: "lines+markers",
-
       x: daily.map(row => row.Days_to_Exp),
       y: daily.map(row => row.VIX),
-
-      // 保留給 hovertemplate 使用
       text: daily.map(row => row.Expiration_Month),
-
       customdata: daily.map(row => [
         row.Expiration_Date,
         row.Forward
       ]),
-
       hovertemplate:
         "<b>%{text}</b>" +
         "<br>Expiration: %{customdata[0]}" +
         "<br>Days to expiration: %{x:.0f}" +
         "<br>VIX-style IV: %{y:.2f}%" +
-        "<br>Forward: %{customdata[1]:,.2f}" +
+        "<br>Implied forward: %{customdata[1]:,.2f}" +
         "<extra></extra>",
-
       line: {
         width: 2.4
       },
-
       marker: {
         size: 8
       }
     };
 
     const layout = {
-
       title: {
-        text:
-          `TXO VIX Term Structure — ${date}`,
+        text: `TXO VIX Term Structure — ${date}`,
         x: 0.5
       },
-
       xaxis: {
         title: "Days to expiration",
         rangemode: "tozero",
         gridcolor: "rgba(127,127,127,0.22)"
       },
-
       yaxis: {
         title: "Annualized implied volatility (%)",
         gridcolor: "rgba(127,127,127,0.22)"
       },
-
       margin: {
         l: 70,
         r: 25,
         t: 70,
         b: 65
       },
-
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
-
       font: {
         color: bodyColor
       },
-
       hovermode: "closest",
-
       showlegend: false,
-
       autosize: true
     };
 
@@ -297,58 +281,178 @@ Only MXF futures contracts with matching expiration dates are included. The char
       `move the slider to inspect the last 30 calendar days.`;
   }
 
-  fetch(
-    `${rawData}/vix_term_structure_history.csv?t=${stamp}`
-  )
-    .then(response => {
+  function renderVolume(volumeRows, date) {
+    const daily = volumeRows
+      .filter(row => row.Date === date)
+      .sort((a, b) =>
+        String(a.Expiration_Month).localeCompare(
+          String(b.Expiration_Month)
+        )
+      );
 
-      if (!response.ok) {
-        throw new Error("VIX history unavailable");
+    if (!daily.length) {
+      Plotly.purge(volumeChart);
+
+      volumeStatus.textContent =
+        `No option-volume data available for ${date}.`;
+
+      return;
+    }
+
+    const bodyColor =
+      getComputedStyle(document.body).color;
+
+    const trace = {
+      type: "bar",
+      x: daily.map(row => row.Expiration_Month),
+      y: daily.map(row => row.Volume),
+      customdata: daily.map(() => date),
+      hovertemplate:
+        "<b>%{x}</b>" +
+        "<br>Trading date: %{customdata}" +
+        "<br>Call + Put volume: %{y:,.0f}" +
+        "<extra></extra>"
+    };
+
+    const layout = {
+      title: {
+        text: `TXO Option Volume by Expiration — ${date}`,
+        x: 0.5,
+        font: {
+          size: 18
+        }
+      },
+      xaxis: {
+        title: "Expiration",
+        type: "category",
+        automargin: true
+      },
+      yaxis: {
+        title: "Call + Put volume",
+        rangemode: "tozero",
+        tickformat: ",",
+        gridcolor: "rgba(127,127,127,0.18)",
+        automargin: true
+      },
+      margin: {
+        l: 80,
+        r: 30,
+        t: 60,
+        b: 75
+      },
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: {
+        color: bodyColor
+      },
+      showlegend: false,
+      hovermode: "closest",
+      autosize: true
+    };
+
+    Plotly.react(
+      volumeChart,
+      [trace],
+      layout,
+      {
+        responsive: true,
+        displaylogo: false,
+        scrollZoom: false
       }
+    );
 
-      return response.text();
-    })
+    const totalVolume = daily.reduce(
+      (sum, row) => sum + row.Volume,
+      0
+    );
 
-    .then(text => {
+    volumeStatus.textContent =
+      `Trading date: ${date} · ` +
+      `${daily.length} expirations · ` +
+      `total Call + Put volume: ` +
+      `${totalVolume.toLocaleString()}`;
+  }
 
-      const rows = parseCsv(text);
+  // ------------------------------------------------------------
+  // Load VIX history + option-volume history
+  // ------------------------------------------------------------
 
-      const allDates =
-        [...new Set(rows.map(row => row.Date))]
-          .sort();
+  Promise.all([
+    fetch(
+      `${rawData}/vix_term_structure_history.csv?t=${stamp}`
+    )
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("VIX history unavailable");
+        }
+
+        return response.text();
+      }),
+
+    fetch(
+      `${rawData}/option_volume_history.csv?t=${stamp}`
+    )
+      .then(response => {
+        // Volume history is optional. If it is unavailable,
+        // keep the VIX term-structure chart working.
+        if (!response.ok) {
+          return "";
+        }
+
+        return response.text();
+      })
+      .catch(error => {
+        console.warn(
+          "Option-volume history unavailable:",
+          error
+        );
+
+        return "";
+      })
+  ])
+    .then(([
+      vixText,
+      volumeText
+    ]) => {
+      const rows =
+        parseCsv(vixText);
+
+      const volumeRows =
+        parseVolumeCsv(volumeText);
+
+      const allDates = [
+        ...new Set(
+          rows.map(row => row.Date)
+        )
+      ].sort();
 
       if (!allDates.length) {
         throw new Error("No VIX history rows");
       }
 
-      // 最新有資料的交易日
       const latestDate =
         allDates[allDates.length - 1];
 
-      // 最近 30 calendar days
-      // 包含 latestDate，所以往前減 29 天
-      const cutoff = isoDate(latestDate);
+      const cutoff =
+        isoDate(latestDate);
 
       cutoff.setUTCDate(
         cutoff.getUTCDate() - 29
       );
 
-      // 只保留這 30 天內真正存在資料的交易日
       const recentDates =
         allDates.filter(
           date => isoDate(date) >= cutoff
         );
 
+      if (!recentDates.length) {
+        throw new Error("No recent VIX dates");
+      }
+
       slider.min = "0";
-      slider.max =
-        String(recentDates.length - 1);
-
+      slider.max = String(recentDates.length - 1);
       slider.step = "1";
-
-      // 預設顯示最新一天
-      slider.value =
-        String(recentDates.length - 1);
-
+      slider.value = String(recentDates.length - 1);
       slider.disabled = false;
 
       startLabel.textContent =
@@ -358,19 +462,20 @@ Only MXF futures contracts with matching expiration dates are included. The char
         recentDates[recentDates.length - 1];
 
       function updateFromSlider() {
-
         const selectedDate =
-          recentDates[
-            Number(slider.value)
-          ];
+          recentDates[Number(slider.value)];
 
         renderTermStructure(
           rows,
           selectedDate
         );
+
+        renderVolume(
+          volumeRows,
+          selectedDate
+        );
       }
 
-      // 拖曳時即時更新
       slider.addEventListener(
         "input",
         updateFromSlider
@@ -378,17 +483,16 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
       updateFromSlider();
     })
-
     .catch(error => {
-
-      console.error(error);
+      console.error(
+        "VIX interactive chart error:",
+        error
+      );
 
       status.textContent =
         "Interactive history could not be loaded; " +
         "showing the latest static chart instead.";
 
-      // fallback：如果 CSV 抓不到，
-      // 還是顯示原本 PNG
       chart.innerHTML = `
         <img
           src="${rawOutput}/latest_term_structure.png?t=${stamp}"
@@ -397,269 +501,188 @@ Only MXF futures contracts with matching expiration dates are included. The char
         >
       `;
 
-      slider.disabled = true;
+      volumeStatus.textContent =
+        "Option-volume history could not be loaded.";
 
+      slider.disabled = true;
     });
 
-
-
-// ------------------------------------------------------------
-// Front-expiry VIX vs TAIEX
-// ------------------------------------------------------------
-
-const frontChart =
-  document.getElementById("front-vix-taiex-chart");
-
-const frontStatus =
-  document.getElementById("front-vix-taiex-status");
-
-fetch(
-  `${rawOutput}/latest_front_vix_vs_taiex.json?t=${stamp}`
-)
-  .then(response => {
-
-    if (!response.ok) {
-      throw new Error(
-        "Front-expiry VIX / TAIEX data unavailable"
-      );
-    }
-
-    return response.json();
-  })
-
-  .then(payload => {
-
-    const rows = payload.data;
-
-    if (!rows || !rows.length) {
-      throw new Error("No observations");
-    }
-
-    const dates =
-      rows.map(row => row.Date);
-
-    const taiex =
-      rows.map(row => Number(row.TAIEX_Close));
-
-    const vix =
-      rows.map(row => Number(row.Front_VIX));
-
-    const contracts =
-      rows.map(row => row.Contract);
-
-
-    // 上圖：TAIEX
-    const taiexTrace = {
-
-      type: "scatter",
-
-      mode: "lines+markers",
-
-      x: dates,
-      y: taiex,
-
-      xaxis: "x",
-      yaxis: "y",
-
-      name: "TAIEX Close",
-
-      marker: {
-        size: 6
-      },
-
-      line: {
-        width: 2
-      },
-
-      hovertemplate:
-        "<b>%{x}</b>" +
-        "<br>TAIEX Close: %{y:,.2f}" +
-        "<extra></extra>"
-    };
-
-
-    // 下圖：Front-expiry VIX
-    const vixTrace = {
-
-      type: "scatter",
-
-      mode: "lines+markers",
-
-      x: dates,
-      y: vix,
-
-      xaxis: "x2",
-      yaxis: "y2",
-
-      name: "Front-expiry VIX-style IV",
-
-      customdata: contracts,
-
-      marker: {
-        size: 6
-      },
-
-      line: {
-        width: 2
-      },
-
-      hovertemplate:
-        "<b>%{x}</b>" +
-        "<br>Contract: %{customdata}" +
-        "<br>VIX-style IV: %{y:.2f}%" +
-        "<extra></extra>"
-    };
-
-
-    const frontBodyColor =
-      getComputedStyle(document.body).color;
-
-
-    const frontLayout = {
-
-      title: {
-        text:
-          "TAIEX vs Front-expiry VIX-style IV",
-        x: 0.5,
-        font: {
-          size: 19
-        }
-      },
-
-
-      // 上圖 x 軸
-      xaxis: {
-
-        domain: [0, 1],
-
-        anchor: "y",
-
-        type: "date",
-
-        showticklabels: false,
-
-        showgrid: false
-      },
-
-
-      // 上圖 y 軸
-      yaxis: {
-
-        domain: [0.57, 1],
-
-        title: "TAIEX Close",
-
-        gridcolor:
-          "rgba(127,127,127,0.18)",
-
-        automargin: true
-      },
-
-
-      // 下圖 x 軸
-      xaxis2: {
-
-        domain: [0, 1],
-
-        anchor: "y2",
-
-        matches: "x",
-
-        type: "date",
-
-        title: {
-          text: "Trading Date",
-          standoff: 10
-        },
-
-        tickformat: "%m-%d",
-
-        showgrid: false,
-
-        automargin: true
-      },
-
-
-      // 下圖 y 軸
-      yaxis2: {
-
-        domain: [0, 0.42],
-
-        title: "VIX-style IV (%)",
-
-        gridcolor:
-          "rgba(127,127,127,0.18)",
-
-        automargin: true
-      },
-
-
-      margin: {
-        l: 75,
-        r: 35,
-        t: 65,
-        b: 65
-      },
-
-      paper_bgcolor:
-        "rgba(0,0,0,0)",
-
-      plot_bgcolor:
-        "rgba(0,0,0,0)",
-
-      font: {
-        color: frontBodyColor
-      },
-
-      showlegend: false,
-
-      hovermode: "closest",
-
-      autosize: true
-    };
-
-
-    Plotly.react(
-      frontChart,
-      [
-        taiexTrace,
-        vixTrace
-      ],
-      frontLayout,
-      {
-        responsive: true,
-        displaylogo: false,
-        scrollZoom: false
+  // ------------------------------------------------------------
+  // Front-expiry VIX vs TAIEX
+  // ------------------------------------------------------------
+
+  const frontChart =
+    document.getElementById("front-vix-taiex-chart");
+
+  const frontStatus =
+    document.getElementById("front-vix-taiex-status");
+
+  fetch(
+    `${rawOutput}/latest_front_vix_vs_taiex.json?t=${stamp}`
+  )
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(
+          "Front-expiry VIX / TAIEX data unavailable"
+        );
       }
-    );
 
+      return response.json();
+    })
+    .then(payload => {
+      const rows = payload.data;
 
-    frontStatus.textContent =
-      `Latest observation: ${payload.as_of_date} · ` +
-      `move the cursor over the lines to inspect values.`;
-  })
+      if (!rows || !rows.length) {
+        throw new Error("No observations");
+      }
 
-  .catch(error => {
+      const dates =
+        rows.map(row => row.Date);
 
-    console.error(error);
+      const taiex =
+        rows.map(row => Number(row.TAIEX_Close));
 
-    frontStatus.textContent =
-      "TAIEX / front-expiry VIX history could not be loaded.";
-  });
+      const vix =
+        rows.map(row => Number(row.Front_VIX));
 
+      const contracts =
+        rows.map(row => row.Contract);
 
+      const taiexTrace = {
+        type: "scatter",
+        mode: "lines+markers",
+        x: dates,
+        y: taiex,
+        xaxis: "x",
+        yaxis: "y",
+        name: "TAIEX Close",
+        marker: {
+          size: 6
+        },
+        line: {
+          width: 2
+        },
+        hovertemplate:
+          "<b>%{x}</b>" +
+          "<br>TAIEX Close: %{y:,.2f}" +
+          "<extra></extra>"
+      };
 
-// ------------------------------------------------------------
-// TX / MXF IV charts
-// 保持你原本的靜態圖功能
-// ------------------------------------------------------------
+      const vixTrace = {
+        type: "scatter",
+        mode: "lines+markers",
+        x: dates,
+        y: vix,
+        xaxis: "x2",
+        yaxis: "y2",
+        name: "Front-expiry VIX-style IV",
+        customdata: contracts,
+        marker: {
+          size: 6
+        },
+        line: {
+          width: 2
+        },
+        hovertemplate:
+          "<b>%{x}</b>" +
+          "<br>Contract: %{customdata}" +
+          "<br>VIX-style IV: %{y:.2f}%" +
+          "<extra></extra>"
+      };
+
+      const frontBodyColor =
+        getComputedStyle(document.body).color;
+
+      const frontLayout = {
+        title: {
+          text: "TAIEX vs Front-expiry VIX-style IV",
+          x: 0.5,
+          font: {
+            size: 19
+          }
+        },
+        xaxis: {
+          domain: [0, 1],
+          anchor: "y",
+          type: "date",
+          showticklabels: false,
+          showgrid: false
+        },
+        yaxis: {
+          domain: [0.57, 1],
+          title: "TAIEX Close",
+          gridcolor: "rgba(127,127,127,0.18)",
+          automargin: true
+        },
+        xaxis2: {
+          domain: [0, 1],
+          anchor: "y2",
+          matches: "x",
+          type: "date",
+          title: {
+            text: "Trading Date",
+            standoff: 10
+          },
+          tickformat: "%m-%d",
+          showgrid: false,
+          automargin: true
+        },
+        yaxis2: {
+          domain: [0, 0.42],
+          title: "VIX-style IV (%)",
+          gridcolor: "rgba(127,127,127,0.18)",
+          automargin: true
+        },
+        margin: {
+          l: 75,
+          r: 35,
+          t: 65,
+          b: 65
+        },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: {
+          color: frontBodyColor
+        },
+        showlegend: false,
+        hovermode: "closest",
+        autosize: true
+      };
+
+      Plotly.react(
+        frontChart,
+        [
+          taiexTrace,
+          vixTrace
+        ],
+        frontLayout,
+        {
+          responsive: true,
+          displaylogo: false,
+          scrollZoom: false
+        }
+      );
+
+      frontStatus.textContent =
+        `Latest observation: ${payload.as_of_date} · ` +
+        `move the cursor over the lines to inspect values.`;
+    })
+    .catch(error => {
+      console.error(error);
+
+      frontStatus.textContent =
+        "TAIEX / front-expiry VIX history could not be loaded.";
+    });
+
+  // ------------------------------------------------------------
+  // TX / MXF IV charts
+  // ------------------------------------------------------------
 
   function setStaticChart(
     imageId,
     statusId,
     filename
   ) {
-
     const image =
       document.getElementById(imageId);
 
@@ -670,7 +693,6 @@ fetch(
       `${rawOutput}/${filename}?t=${stamp}`;
 
     image.onerror = () => {
-
       chartStatus.textContent =
         "The chart is not available yet. " +
         "Run the repository workflow once.";
@@ -689,25 +711,17 @@ fetch(
     "latest_mtx_iv_calibration.png"
   );
 
-
-
-
   fetch(
     `${rawOutput}/latest_iv.json?t=${stamp}`
   )
     .then(response => {
-
       if (!response.ok) {
-        throw new Error(
-          "IV metadata unavailable"
-        );
+        throw new Error("IV metadata unavailable");
       }
 
       return response.json();
     })
-
     .then(meta => {
-
       const tx = meta.products.TX;
       const mtx = meta.products.MTX;
 
@@ -725,9 +739,7 @@ fetch(
         `${mtx.plotted_points} OTM IV points || ` +
         `Generated in Taiwan: ${meta.generated_at_taipei}`;
     })
-
     .catch(() => {
-
       document.getElementById(
         "tx-status"
       ).textContent =
@@ -738,21 +750,13 @@ fetch(
       ).textContent =
         "Latest automatically generated MTX IV curve.";
     });
-
 })();
 </script>
+```
 
 For detailed contract specifications and expiration dates, please refer to the [TAIFEX Futures Specs](https://www.taifex.com.tw/cht/2/tX) and [TAIFEX Options Specs](https://www.taifex.com.tw/cht/2/tXO).
 
-
-<!-- ## Method note
-
-“IV calibration” here means numerical inversion of the Black-76 formula for each eligible OTM option quote. It is not a parametric volatility-surface model fit. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
-
-## Reproducibility
-
-The code repository contains the downloader, cleaning rules, VIX-style calculation, Black-76 inversion, tests, generated CSV files, and daily charts. GitHub Actions refreshes the outputs on weekdays. -->
-
 ## Related Websites
+
 - [VIXTWN (MacroMicro)](https://www.macromicro.me/charts/46328/tw-vixtwn)
 - [VIX Futures Term Structure (vixcentral)](https://vixcentral.com)
