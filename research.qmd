@@ -10,4 +10,3 @@ title: "Research"
 
 ## Projects
 
-- Volatility arbitrage market making in Taiwan option and future markets
