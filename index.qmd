@@ -22,10 +22,7 @@ about:
 
 ## Research interests
 
-- Mathematical Finance
-- Quantitative Finance
-- Risk Management
-- Large Deviations
+
 
 
 
