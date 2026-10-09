@@ -4,9 +4,12 @@ title: "Research"
 
 ## Working papers
 
-- Deep martingale option pricing for volatility model calibration
-- Asymptotic behavior of minimum VaR/CVaR portfolio under elliptical distributions
+- Deep martingale option pricing for volatility model calibration (to be presented at the 34th Annual PBFEAM and 20th NYCU International Conferences, Dec. 2026.)
+- Asymptotic behavior of minimum VaR/CVaR portfolio under elliptical distributions (submitted to possible publication)
 - Importance sampling and large deviations for VaR/CVaR Estimation (Supported by NSTC Grant No. 115-2813-C-007-108-H)
 
 ## Projects
 
+- Entropic Value-at-Risk: Deep Learning and Importance Sampling for the Dual Problem
+- Efficient Importance Sampling (EIS) for Multivariate Student-t Distribution via Auxiliary Distributions
+- Large_Deviation_Based_Portfolio_Optimization
