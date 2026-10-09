@@ -75,7 +75,7 @@ Only TXF futures contracts with matching expiration dates are included. The char
 
 <div class="project-card">
   <p id="tx-status">Loading the latest TX curve…</p>
-  <img id="tx-chart" alt="Latest TXO implied-volatility curve using same-expiry TX futures" style="width:100%; max-width:1100px;">
+  <img id="tx-chart" src="https://raw.githubusercontent.com/siang-dai/txo-vix-iv/main/output/latest_tx_iv_calibration.png" loading="lazy" decoding="async" width="2698" height="1843" alt="Latest TXO implied-volatility curve using same-expiry TX futures" style="width:100%; height:auto; max-width:1100px;">
 </div>
 
 ### Mini-TAIEX Futures (MXF) IV curve
@@ -84,17 +84,23 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
 <div class="project-card">
   <p id="mtx-status">Loading the latest MXF curve…</p>
-  <img id="mtx-chart" alt="Latest TXO implied-volatility curve using same-expiry MXF futures" style="width:100%; max-width:1100px;">
+  <img id="mtx-chart" src="https://raw.githubusercontent.com/siang-dai/txo-vix-iv/main/output/latest_mtx_iv_calibration.png" loading="lazy" decoding="async" width="2702" height="1843" alt="Latest TXO implied-volatility curve using same-expiry MXF futures" style="width:100%; height:auto; max-width:1100px;">
 </div>
 
 ```{=html}
-<script src="https://cdn.plot.ly/plotly-4.1.1.min.js"></script>
-
 <script>
 (() => {
+  const plotlyReady = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/plotly.js-basic-dist-min@4.1.1/plotly-basic.min.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Plotly could not be loaded"));
+    document.head.appendChild(script);
+  });
+
   const user = "siang-dai";
   const repo = "txo-vix-iv";
-  const stamp = Date.now();
 
   const rawRoot =
     `https://raw.githubusercontent.com/${user}/${repo}/main`;
@@ -379,7 +385,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
   Promise.all([
     fetch(
-      `${rawData}/vix_term_structure_history.csv?t=${stamp}`
+      `${rawData}/vix_term_structure_history.csv`
     )
       .then(response => {
         if (!response.ok) {
@@ -390,7 +396,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
       }),
 
     fetch(
-      `${rawData}/option_volume_history.csv?t=${stamp}`
+      `${rawData}/option_volume_history.csv`
     )
       .then(response => {
         // Volume history is optional. If it is unavailable,
@@ -408,7 +414,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
         );
 
         return "";
-      })
+      }),
+    plotlyReady
   ])
     .then(([
       vixText,
@@ -495,7 +502,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
       chart.innerHTML = `
         <img
-          src="${rawOutput}/latest_term_structure.png?t=${stamp}"
+          src="${rawOutput}/latest_term_structure.png"
           alt="Latest TXO VIX term structure"
           style="width:100%; max-width:960px;"
         >
@@ -517,9 +524,10 @@ Only MXF futures contracts with matching expiration dates are included. The char
   const frontStatus =
     document.getElementById("front-vix-taiex-status");
 
-  fetch(
-    `${rawOutput}/latest_front_vix_vs_taiex.json?t=${stamp}`
-  )
+  Promise.all([
+    fetch(
+      `${rawOutput}/latest_front_vix_vs_taiex.json`
+    )
     .then(response => {
       if (!response.ok) {
         throw new Error(
@@ -528,8 +536,10 @@ Only MXF futures contracts with matching expiration dates are included. The char
       }
 
       return response.json();
-    })
-    .then(payload => {
+    }),
+    plotlyReady
+  ])
+    .then(([payload]) => {
       const rows = payload.data;
 
       if (!rows || !rows.length) {
@@ -680,17 +690,13 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
   function setStaticChart(
     imageId,
-    statusId,
-    filename
+    statusId
   ) {
     const image =
       document.getElementById(imageId);
 
     const chartStatus =
       document.getElementById(statusId);
-
-    image.src =
-      `${rawOutput}/${filename}?t=${stamp}`;
 
     image.onerror = () => {
       chartStatus.textContent =
@@ -701,18 +707,16 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
   setStaticChart(
     "tx-chart",
-    "tx-status",
-    "latest_tx_iv_calibration.png"
+    "tx-status"
   );
 
   setStaticChart(
     "mtx-chart",
-    "mtx-status",
-    "latest_mtx_iv_calibration.png"
+    "mtx-status"
   );
 
   fetch(
-    `${rawOutput}/latest_iv.json?t=${stamp}`
+    `${rawOutput}/latest_iv.json`
   )
     .then(response => {
       if (!response.ok) {

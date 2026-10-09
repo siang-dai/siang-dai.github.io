@@ -44,13 +44,19 @@ This page uses Cboe SPX/SPXW end-of-day option quotes to calculate a VIX estimat
 </div>
 ```
 
-<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@4.1.0/plotly.min.js"></script>
-
 <script>
 (() => {
+  const plotlyReady = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/plotly.js-basic-dist-min@4.1.1/plotly-basic.min.js";
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Plotly could not be loaded"));
+    document.head.appendChild(script);
+  });
+
   const user = "siang-dai";
   const repo = "spx-vix-term-structure";
-  const stamp = Date.now();
   const rawRoot = `https://raw.githubusercontent.com/${user}/${repo}/main`;
   const rawData = `${rawRoot}/data`;
   const rawOutput = `${rawRoot}/output`;
@@ -189,12 +195,15 @@ This page uses Cboe SPX/SPXW end-of-day option quotes to calculate a VIX estimat
     if (date) renderTermStructure(date);
   }
 
-  fetch(`${rawData}/vix_term_structure_history.csv?t=${stamp}`)
-    .then(response => {
-      if (!response.ok) throw new Error("SPX history unavailable");
-      return response.text();
-    })
-    .then(text => {
+  Promise.all([
+    fetch(`${rawData}/vix_term_structure_history.csv`)
+      .then(response => {
+        if (!response.ok) throw new Error("SPX history unavailable");
+        return response.text();
+      }),
+    plotlyReady
+  ])
+    .then(([text]) => {
       allRows = parseCsv(text);
       const allDates = [...new Set(allRows.map(row => row.Date))].sort();
       if (!allDates.length) throw new Error("No SPX history rows yet");
@@ -220,7 +229,7 @@ This page uses Cboe SPX/SPXW end-of-day option quotes to calculate a VIX estimat
       status.textContent = "Interactive history is not available yet; showing the latest static chart if present.";
       chart.innerHTML = `
         <img
-          src="${rawOutput}/latest_term_structure.png?t=${stamp}"
+          src="${rawOutput}/latest_term_structure.png"
           alt="Latest SPX VIX term structure"
           style="width:100%; max-width:1200px;"
         >
