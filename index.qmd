@@ -3,7 +3,7 @@ title: "Siang-Dai"
 subtitle: "Undergraduate · Department of Quantitative Finance · National Tsing Hua University"
 about:
   template: trestles
-  image: images/sesame.svg
+  image: images/證件照.JPG
   image-shape: round
   links:
     - icon: envelope
