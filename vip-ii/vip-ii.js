@@ -78,9 +78,8 @@
     const chosen = { ...state };
     el("status").textContent = "Loading selected daily estimates…";
     el("chart-group").setAttribute("aria-busy", "true");
-    el("download").disabled = true;
     // Serialize chart operations: an old Plotly promise must not overwrite a
-    // newer asset selection, or enable download with stale data.
+    // newer asset selection.
     rendering = rendering.catch(() => {}).then(() => drawSelection(mine, chosen));
     return rendering;
   }
@@ -136,9 +135,7 @@
         mLayout.yaxis.zeroline = true;
         mLayout.yaxis.zerolinecolor = "rgba(127,127,127,.6)";
       }
-      const options = { responsive: true, displaylogo: false, scrollZoom: false,
-        modeBarButtonsToRemove: ["lasso2d", "select2d"],
-        toImageButtonOptions: { format: "svg", filename: `vip-ii-${state.a}` } };
+      const options = { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false };
       syncing = true;
       const key = `${state.view}-${state.a}-${state.b}`;
       if (drawnKey === key && metricChart.data) {
@@ -153,7 +150,7 @@
       syncing = false;
       if (!initialized) { bindCharts(); initialized = true; }
       if (mine !== revision) return;
-      current = { shown, paired, a: state.a, b: state.b, sourceA: data.a, range };
+      current = { range };
       const warnings = [];
       if (paired && meta.cross_market) warnings.push("Taiwan and US closes occur at different times. This comparison matches local trading dates and is descriptive, not a synchronized trading signal.");
       if (state.a === "VIX" || (paired && state.b === "VIX")) warnings.push("VIX inputs measure changes in the VIX index itself; these estimates are not SPX volatility or official VVIX.");
@@ -163,7 +160,6 @@
       const basis = paired ? `${a.id}: ${a.as_of} · ${b.id}: ${b.as_of} · common date: ${meta.as_of}` : `${a.adjusted ? "Adjusted close" : "Index close"} · ${a.source} · latest: ${meta.as_of}`;
       el("status").textContent = `${range[0]} – ${range[1]} · ${shown.dates.length} observations · ${basis}`;
       metricChart.setAttribute("aria-label", paired ? "Historical and instantaneous return correlations" : "Historical, EWMA, GARCH and instantaneous volatility estimates");
-      el("download").disabled = false;
       el("reset").disabled = false;
     } catch (error) {
       if (mine !== revision) return;
@@ -216,17 +212,6 @@
   el("asset-b").addEventListener("change", selection);
   el("range").addEventListener("change", () => { state.months = Number(el("range").value); if (manifest) draw(); });
   el("reset").addEventListener("click", () => { if (manifest) draw(); });
-  el("download").addEventListener("click", () => {
-    if (!current) return;
-    const keys = Object.keys(current.shown);
-    const headers = keys.map(k => k === "dates" ? "Date" : k === "garch" ? "GARCH_next_session_pct" :
-      k === "price_a" ? `${current.sourceA}_price` : k === "price_b" ? `${current.sourceA === current.a ? current.b : current.a}_price` : k);
-    const rows = [headers.join(","), ...current.shown.dates.map((_, i) => keys.map(k => current.shown[k][i] ?? "").join(","))];
-    const url = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" }));
-    const link = document.createElement("a");
-    link.href = url; link.download = `VIP-II-${current.a}${current.paired ? `-${current.b}` : ""}-${state.months}M.csv`;
-    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-  });
 
   let themeTimer;
   new MutationObserver(() => {

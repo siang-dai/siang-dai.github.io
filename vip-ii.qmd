@@ -38,7 +38,6 @@ toc: false
       <label class="vip-field" id="vip-second-field" hidden>Second asset
         <select id="vip-asset-b" disabled aria-label="Second asset"><option>Loading…</option></select>
       </label>
-      <button id="vip-download" type="button" disabled>Download visible data</button>
     </div>
     <p id="vip-status" class="vip-small" role="status" aria-live="polite">Loading daily estimates…</p>
     <p id="vip-warning" class="vip-warning" hidden></p>
