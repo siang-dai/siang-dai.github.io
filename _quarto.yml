@@ -22,6 +22,8 @@ website:
         text: TXO Observatory
       - href: spx.qmd
         text: SPX Observatory
+      - href: vip-ii.qmd
+        text: VIP II
     right:
       - icon: github
         href: "https://github.com/siang-dai"

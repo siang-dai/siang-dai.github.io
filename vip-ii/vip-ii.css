@@ -1,0 +1,49 @@
+#vip-ii {
+  --vip-line: rgba(127, 127, 127, .24);
+  max-width: 1120px;
+  margin: 0 auto;
+}
+#vip-ii .vip-eyebrow { font-size: .76rem; letter-spacing: .12em; margin-bottom: .65rem; }
+#vip-ii .vip-intro { margin-bottom: 1.8rem; }
+#vip-ii .vip-intro > p { margin-bottom: .5rem; }
+#vip-ii .vip-small { font-size: .86rem; opacity: .84; line-height: 1.6; }
+#vip-ii .vip-controls, #vip-ii .vip-selectors, #vip-ii .vip-chart-heading {
+  display: flex; align-items: end; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+}
+#vip-ii .vip-controls { padding-bottom: 1rem; border-bottom: 1px solid var(--vip-line); }
+#vip-ii .vip-selectors { justify-content: start; margin: 1rem 0; }
+#vip-ii .vip-field { display: flex; flex-direction: column; gap: .35rem; font-size: .85rem; }
+#vip-ii [hidden] { display: none !important; }
+#vip-ii select, #vip-ii button {
+  font: inherit; color: inherit; background: var(--bs-body-bg, transparent);
+  border: 1px solid var(--vip-line); border-radius: .4rem; padding: .5rem .75rem; min-height: 42px;
+}
+#vip-ii select { min-width: 150px; max-width: 100%; }
+#vip-ii button { cursor: pointer; font-size: .85rem; }
+#vip-ii button:disabled { opacity: .5; cursor: default; }
+#vip-ii .vip-tabs { display: flex; gap: .3rem; }
+#vip-ii .vip-tabs button[aria-selected="true"] { background: #284b63; color: #fff; border-color: #284b63; }
+#vip-ii button:focus-visible, #vip-ii select:focus-visible { outline: 3px solid #78a7c8; outline-offset: 2px; }
+#vip-ii .vip-warning { padding: .75rem 1rem; border-left: 3px solid #a87313; background: rgba(180, 130, 40, .10); font-size: .88rem; }
+#vip-ii h2 { font-size: 1.1rem; border: 0; margin: 1rem 0 .4rem; padding: 0; }
+#vip-ii .vip-chart { width: 100%; min-width: 0; }
+#vip-ii .vip-price { height: 240px; }
+#vip-ii .vip-metric { height: 400px; }
+#vip-ii .vip-chart-heading { align-items: center; }
+#vip-ii .vip-methods { border-top: 1px solid var(--vip-line); padding: 1rem 0; margin-top: 1.5rem; }
+#vip-ii summary { cursor: pointer; font-weight: 600; }
+#vip-ii dl { margin-top: 1rem; }
+#vip-ii dt { margin-top: .8rem; font-weight: 600; }
+#vip-ii dd { margin-left: 0; font-size: .9rem; opacity: .9; }
+#vip-ii .vip-methods p { font-size: .9rem; }
+#vip-ii .vip-footer { border-top: 1px solid var(--vip-line); padding-top: 1rem; margin-top: .5rem; font-size: .9rem; }
+@media (max-width: 600px) {
+  #vip-ii .vip-controls { align-items: start; }
+  #vip-ii .vip-field { min-width: 0; flex: 1 1 140px; }
+  #vip-ii .vip-field select { width: 100%; min-width: 0; font-size: 16px; }
+  #vip-ii .vip-tabs { width: 100%; }
+  #vip-ii .vip-tabs button { flex: 1; min-height: 44px; }
+  #vip-ii .vip-price { height: 290px; }
+  #vip-ii .vip-metric { height: 430px; }
+  #vip-ii .vip-selectors > button { width: 100%; }
+}

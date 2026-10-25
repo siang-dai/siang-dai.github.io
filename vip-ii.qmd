@@ -1,0 +1,85 @@
+---
+title: "VIP II"
+description: "Daily volatility and correlation across equity, bond and gold markets."
+page-layout: full
+toc: false
+---
+
+```{=html}
+<link rel="stylesheet" href="vip-ii/vip-ii.css">
+<div id="vip-ii" data-source="https://raw.githubusercontent.com/siang-dai/VIP-II/main/output/">
+  <header class="vip-intro">
+    <p class="vip-eyebrow">VOLATILITY INFORMATION PLATFORM · SECOND EDITION</p>
+    <p>Follow daily market volatility and cross-asset relationships with six estimators.</p>
+    <p class="vip-small">Daily closing data · <span id="vip-updated">Checking the latest publication…</span></p>
+  </header>
+
+  <div class="vip-controls">
+    <div class="vip-tabs" role="tablist" aria-label="Analysis">
+      <button id="vip-vol-tab" type="button" role="tab" aria-selected="true" aria-controls="vip-analysis" data-view="volatility">Volatility</button>
+      <button id="vip-corr-tab" type="button" role="tab" aria-selected="false" aria-controls="vip-analysis" data-view="correlation">Correlation</button>
+    </div>
+    <label class="vip-field">Display range
+      <select id="vip-range" aria-label="Display range">
+        <option value="1">1 month</option>
+        <option value="3">3 months</option>
+        <option value="6" selected>6 months</option>
+        <option value="12">1 year</option>
+        <option value="60">5 years</option>
+      </select>
+    </label>
+  </div>
+
+  <section id="vip-analysis" role="tabpanel" aria-labelledby="vip-vol-tab">
+    <div class="vip-selectors">
+      <label class="vip-field"><span id="vip-first-label">Asset</span>
+        <select id="vip-asset-a" disabled aria-label="First asset"><option>Loading…</option></select>
+      </label>
+      <label class="vip-field" id="vip-second-field" hidden>Second asset
+        <select id="vip-asset-b" disabled aria-label="Second asset"><option>Loading…</option></select>
+      </label>
+      <button id="vip-download" type="button" disabled>Download visible data</button>
+    </div>
+    <p id="vip-status" class="vip-small" role="status" aria-live="polite">Loading daily estimates…</p>
+    <p id="vip-warning" class="vip-warning" hidden></p>
+    <div id="vip-chart-group" aria-busy="true">
+      <h2 id="vip-price-title">Price history</h2>
+      <div id="vip-price" class="vip-chart vip-price" role="img" aria-label="Daily price history"></div>
+      <div class="vip-chart-heading">
+        <h2 id="vip-metric-title">Volatility comparison</h2>
+        <button id="vip-reset" type="button" disabled>Reset zoom</button>
+      </div>
+      <div id="vip-metric" class="vip-chart vip-metric" role="img" aria-label="Comparison of daily volatility estimators"></div>
+    </div>
+    <p class="vip-small">Select a legend label to hide a curve. Drag to zoom; dates stay aligned across both charts. The display range does not change the estimation window.</p>
+    <p id="vip-interpretation" class="vip-small"></p>
+  </section>
+
+  <details class="vip-methods">
+    <summary>Six methods, data and timing</summary>
+    <dl>
+      <dt>Historical volatility · 22 returns</dt>
+      <dd>Sample standard deviation of 22 daily log returns, annualized using 252 trading sessions.</dd>
+      <dt>EWMA · λ = 0.94</dt>
+      <dd>Exponentially weighted squared returns, updated after each close. Initialization uses 22 past returns.</dd>
+      <dt>GARCH(1,1) · next-session forecast</dt>
+      <dd>A 504-return trailing model, refitted every 21 sessions and updated daily. Values are shown on the date the forecast was made, using information available at that close.</dd>
+      <dt>Instantaneous volatility · Fourier / Fejér</dt>
+      <dd>A daily-data adaptation using 252 trailing returns and 8 Fourier modes with reflected boundaries. It estimates local volatility; it is not an intraday measurement or a numerical reproduction of VIP I.</dd>
+      <dt>Historical correlation · 22 paired returns</dt>
+      <dd>Pearson correlation after intersecting the two price calendars and then calculating log returns. Prices are never filled across holidays.</dd>
+      <dt>Instantaneous correlation · Fourier / Fejér</dt>
+      <dd>Uses the same nonnegative Fourier kernel for local covariance and both variances. This preserves valid covariance structure without replacing out-of-range values with earlier observations.</dd>
+    </dl>
+    <p>ETF series use adjusted closes; SPX and TAIEX use index closes. Correlations use each market's local trading date and native currency. Taiwan and US closes are not simultaneous, so cross-market comparisons describe asynchronous returns. They are not predictive signals.</p>
+    <p>VIX is already an implied volatility index. Applying these estimators to VIX measures the volatility of its own log changes, not SPX volatility or official VVIX.</p>
+    <p>Only completed sessions are used, with a two-hour publication buffer. Scheduled checks run after both markets close, with an additional retry. Source revisions may revise historical estimates. If an update fails, the previous validated publication remains visible with its original date.</p>
+  </details>
+
+  <footer class="vip-footer">
+    <p>VIP II builds on the original Volatility Information Platform by Erik Apostol and its contributors: <a href="https://github.com/ErikApostol/volatility_index_platform" target="_blank" rel="noopener">original VIP repository</a>.</p>
+    <p class="vip-small"><a href="https://github.com/siang-dai/VIP-II" target="_blank" rel="noopener">VIP II source &amp; methodology</a> · <a href="https://github.com/siang-dai/VIP-II/actions/workflows/update.yml" target="_blank" rel="noopener">Update status</a> · Data: <a href="https://finance.yahoo.com/" target="_blank" rel="noopener">Yahoo Finance</a> and <a href="https://www.cboe.com/tradable_products/vix/vix_historical_data/" target="_blank" rel="noopener">Cboe VIX history</a>. Research estimates; source terms apply.</p>
+  </footer>
+</div>
+<script src="vip-ii/vip-ii.js" defer></script>
+```
