@@ -1,5 +1,5 @@
 ---
-title: "VIP II"
+title: "Volatility Index Platform II"
 description: "Daily volatility and correlation across equity, bond and gold markets."
 page-layout: full
 toc: false
