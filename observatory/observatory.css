@@ -1,0 +1,105 @@
+/* Shared presentation for TXO and SPX only; other pages keep their styles. */
+body.observatory-page {
+  --observatory-line: rgba(127, 127, 127, .24);
+  --observatory-accent: #284b63;
+}
+.observatory-page main.content { max-width: 1120px; padding-top: 1.2rem; }
+.observatory-page main h2 { font-size: 1.45rem; border: 0; padding-bottom: 0; margin: 2.4rem 0 .85rem; }
+.observatory-page main > section:first-of-type > h2 { margin-top: .5rem; font-size: 1.6rem; }
+.observatory-page main h3 { font-size: 1.15rem; margin: 2rem 0 .6rem; }
+.observatory-page main section > p { max-width: 85ch; font-size: .93rem; line-height: 1.75; }
+.observatory-page .project-card {
+  width: 100%; max-width: none; margin: 1.25rem 0 2rem; padding: 0;
+  background: transparent; border: 0; border-radius: 0;
+}
+.observatory-page .spx-toolbar, .observatory-page .txo-iv-toolbar {
+  display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap;
+  gap: 1rem; padding-bottom: 1rem; margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--observatory-line);
+}
+.observatory-page .spx-toolbar > p, .observatory-page .txo-iv-toolbar > p {
+  flex: 1 1 300px; margin: 0; font-size: .86rem; line-height: 1.65; opacity: .84;
+}
+.observatory-page #vix-status, .observatory-page #vix-volume-status,
+.observatory-page #front-vix-taiex-status {
+  font-size: .86rem; line-height: 1.65; opacity: .84; margin: 0 0 1rem;
+}
+.observatory-page #vix-status, .observatory-page #front-vix-taiex-status {
+  border-bottom: 1px solid var(--observatory-line); padding-bottom: 1rem;
+}
+.observatory-page .spx-horizon-label {
+  display: flex; flex-direction: column; align-items: stretch; gap: .35rem;
+  font-size: .85rem; margin: 0; min-width: 150px;
+}
+.observatory-page #spx-horizon, .observatory-page .txo-iv-reset {
+  font: inherit; color: inherit; background: var(--bs-body-bg, transparent);
+  border: 1px solid var(--observatory-line); border-radius: .4rem;
+  padding: .5rem .75rem; min-height: 42px;
+}
+.observatory-page .txo-iv-reset { font-size: .85rem; flex-shrink: 0; cursor: pointer; }
+.observatory-page .txo-iv-reset:disabled { opacity: .5; cursor: default; }
+.observatory-page :is(#spx-horizon, .txo-iv-reset, input[type="range"]):focus-visible {
+  outline: 3px solid #78a7c8; outline-offset: 3px;
+}
+.observatory-page .observatory-chart-title {
+  font-size: 1rem; font-weight: 600; line-height: 1.5; margin: 1rem 0 .25rem;
+  overflow-wrap: anywhere;
+}
+.observatory-page #vix-term-chart, .observatory-page #spx-vix-term-chart { height: 400px; min-height: 0; }
+.observatory-page #vix-volume-chart { width: 100%; height: 340px; }
+.observatory-page #front-vix-taiex-chart { width: 100%; height: 540px; }
+.observatory-page .observatory-subsection {
+  border-top: 1px solid var(--observatory-line); margin-top: 1.75rem; padding-top: 1.5rem;
+}
+.observatory-page :is(.vix-slider-wrap, .spx-slider-wrap) {
+  margin: .5rem 0 0; padding: 1rem 0 0; border-top: 1px solid var(--observatory-line);
+}
+.observatory-page :is(#vix-date-slider, #spx-date-slider) {
+  width: 100%; height: 24px; margin: 0; cursor: pointer; accent-color: var(--observatory-accent);
+}
+.observatory-page :is(.vix-slider-labels, .spx-slider-labels) {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center; gap: .5rem; margin-top: .35rem; font-size: .8rem; opacity: 1;
+}
+.observatory-page :is(.vix-slider-labels, .spx-slider-labels) > span { opacity: .7; }
+.observatory-page :is(#vix-selected-date, #spx-selected-date) {
+  font-size: .85rem; font-variant-numeric: tabular-nums;
+  padding: .3rem .65rem; border-radius: .3rem; background: rgba(127, 127, 127, .09);
+}
+.observatory-page .txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1.75rem; }
+.observatory-page .txo-iv-panel { min-width: 0; }
+.observatory-page .txo-iv-panel h4 { font-size: .95rem; font-weight: 600; margin: 0 0 .45rem; line-height: 1.5; }
+.observatory-page .txo-iv-details { font-size: .8rem; opacity: .8; margin-bottom: .7rem; min-height: 2.5em; line-height: 1.6; }
+.observatory-page .txo-iv-plot { width: 100%; height: 340px; }
+/* The chart reserves space above its axes for these existing controls. */
+.observatory-page .js-plotly-plot .modebar-container { top: 0 !important; right: 0 !important; }
+.observatory-page .js-plotly-plot .modebar {
+  padding-top: 0; background: transparent !important; display: flex; flex-wrap: wrap; justify-content: end; max-width: 100%;
+}
+.observatory-page .js-plotly-plot .modebar-group { background: transparent !important; padding-left: 4px; }
+.observatory-page .js-plotly-plot .modebar-btn {
+  padding: 5px; width: 28px; height: 28px; border-radius: 4px;
+  background: transparent; border: 0; color: inherit;
+}
+.observatory-page .js-plotly-plot .modebar-btn:hover { background: rgba(127, 127, 127, .12); }
+.observatory-page .js-plotly-plot .modebar-btn svg { top: 0; width: 16px; height: 16px; }
+.observatory-page #related, .observatory-page #related-websites {
+  border-top: 1px solid var(--observatory-line); margin-top: 2rem; padding-top: .1rem; font-size: .9rem;
+}
+.observatory-page #related h2, .observatory-page #related-websites h2 { font-size: 1.1rem; margin-top: 1.25rem; }
+@media (max-width: 767px) {
+  .observatory-page main.content { padding-top: .7rem; }
+  .observatory-page main > section:first-of-type > h2 { font-size: 1.35rem; }
+  .observatory-page main h2 { font-size: 1.25rem; }
+  .observatory-page main h3 { font-size: 1.05rem; }
+  .observatory-page .project-card { margin-top: 1rem; }
+  .observatory-page .spx-horizon-label { flex: 1 1 100%; }
+  .observatory-page #spx-horizon { font-size: 16px; width: 100%; }
+  .observatory-page .txo-iv-toolbar { align-items: start; }
+  .observatory-page .txo-iv-grid { grid-template-columns: minmax(0, 1fr); gap: 1.7rem; }
+  .observatory-page .txo-iv-details { min-height: 0; }
+  .observatory-page #vix-term-chart, .observatory-page #spx-vix-term-chart { height: 360px; }
+  .observatory-page #front-vix-taiex-chart { height: 560px; }
+  .observatory-page :is(.vix-slider-labels, .spx-slider-labels) { font-size: .71rem; gap: .3rem; }
+  .observatory-page :is(#vix-selected-date, #spx-selected-date) { font-size: .76rem; padding: .3rem .4rem; }
+}

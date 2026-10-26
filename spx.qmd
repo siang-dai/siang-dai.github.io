@@ -1,7 +1,13 @@
 ---
 title: ""
 page-layout: full
+body-classes: observatory-page
 ---
+
+```{=html}
+<link rel="stylesheet" href="observatory/observatory.css">
+<script src="observatory/presentation.js"></script>
+```
 
 ## SPX VIX term structure
 <!-- 
@@ -178,7 +184,7 @@ This page uses Cboe SPX/SPXW end-of-day option quotes to calculate a VIX estimat
       autosize: true
     };
 
-    Plotly.react(chart, [trace], layout, {
+    ObservatoryCharts.react(chart, [trace], layout, {
       responsive: true,
       displaylogo: false,
       scrollZoom: true

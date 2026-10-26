@@ -1,6 +1,13 @@
 ---
 title: ""
+page-layout: full
+body-classes: observatory-page
 ---
+
+```{=html}
+<link rel="stylesheet" href="observatory/observatory.css">
+<script src="observatory/presentation.js"></script>
+```
 
 ## VIX (Volatility Index) term structure
 
@@ -31,18 +38,11 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
     </div>
   </div>
 
-  <div
-    style="
-      border-top: 1px solid rgba(127,127,127,0.25);
-      margin-top: 1rem;
-      padding-top: 1rem;
-    "
-  >
+  <div class="observatory-subsection">
     <p id="vix-volume-status">Loading TXO option volume…</p>
 
     <div
       id="vix-volume-chart"
-      style="width:100%; height:340px;"
     ></div>
   </div>
 </div>
@@ -60,7 +60,6 @@ The nearest-expiry VIX is shown against the TAIEX close over the latest month, i
 
   <div
     id="front-vix-taiex-chart"
-    style="width:100%; height:600px;"
   ></div>
 </div>
 ```
@@ -70,26 +69,6 @@ The nearest-expiry VIX is shown against the TAIEX close over the latest month, i
 IV is calculated by numerically inverting the Black formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
 
 Move the cursor over a point to inspect its strike, IV and option price. Drag to zoom; double-click a chart or use Reset zoom to restore its view.
-
-```{=html}
-<style>
-.txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem 1rem; }
-.txo-iv-panel { min-width: 0; }
-.txo-iv-panel h4 { font-size: 1rem; margin: 0 0 .3rem; }
-.txo-iv-details { font-size: .8rem; margin-bottom: .3rem; min-height: 2.5em; }
-.txo-iv-plot { width: 100%; height: 340px; }
-.txo-iv-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
-.txo-iv-toolbar p { margin: 0; font-size: .9rem; }
-.txo-iv-reset { flex-shrink: 0; background: transparent; color: inherit; border: 1px solid rgba(127,127,127,.4); border-radius: 6px; padding: .35rem .65rem; font-size: .8rem; cursor: pointer; }
-.txo-iv-reset:disabled { opacity: .5; cursor: default; }
-.txo-iv-reset:focus-visible { outline: 3px solid #78a7c8; outline-offset: 2px; }
-body.quarto-dark .txo-iv-card { background: #22272b; }
-@media (max-width: 767px) {
-  .txo-iv-grid { grid-template-columns: minmax(0, 1fr); }
-  .txo-iv-toolbar { flex-wrap: wrap; }
-}
-</style>
-```
 
 ### TAIEX Futures (TXF) IV curve
 
@@ -300,7 +279,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
       autosize: true
     };
 
-    Plotly.react(
+    ObservatoryCharts.react(
       chart,
       [trace],
       layout,
@@ -388,7 +367,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
       autosize: true
     };
 
-    Plotly.react(
+    ObservatoryCharts.react(
       volumeChart,
       [trace],
       layout,
@@ -691,7 +670,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
         autosize: true
       };
 
-      Plotly.react(
+      ObservatoryCharts.react(
         frontChart,
         [
           taiexTrace,
@@ -763,7 +742,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
             "<br>Strike: %{x:,.0f}<br>IV: %{y:.2f}%" +
             "<br>Option price: %{customdata:,.2f} points<extra>%{fullData.name}</extra>"
         }));
-      await Plotly.newPlot(plot, traces, {
+      await ObservatoryCharts.newPlot(plot, traces, {
         margin: { l: 58, r: 12, t: 12, b: 85 },
         xaxis: { title: {text: "Strike price"}, tickformat: ",.0f", nticks: 4,
           gridcolor: "rgba(127,127,127,.18)", automargin: true },
@@ -815,18 +794,6 @@ Only MXF futures contracts with matching expiration dates are included. The char
     }
   });
 
-  let ivThemeTimer;
-  function refreshIvTheme() {
-    clearTimeout(ivThemeTimer);
-    ivThemeTimer = setTimeout(() => {
-      const color = getComputedStyle(document.body).color;
-      ivPlots.filter(plot => plot.data).forEach(plot => Plotly.relayout(plot, {"font.color": color}));
-    }, 100);
-  }
-  new MutationObserver(refreshIvTheme).observe(document.body,
-    {attributes: true, attributeFilter: ["class", "data-bs-theme"]});
-  // Quarto can load an alternate stylesheet after changing the body class.
-  document.querySelectorAll("link.quarto-color-scheme").forEach(link => link.addEventListener("load", refreshIvTheme));
 
 })();
 </script>
