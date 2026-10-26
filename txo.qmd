@@ -69,23 +69,55 @@ The nearest-expiry VIX is shown against the TAIEX close over the latest month, i
 
 IV is calculated by numerically inverting the Black formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
 
+Move the cursor over a point to inspect its strike, IV and option price. Drag to zoom; double-click a chart or use Reset zoom to restore its view.
+
+```{=html}
+<style>
+.txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.4rem 1rem; }
+.txo-iv-panel { min-width: 0; }
+.txo-iv-panel h4 { font-size: 1rem; margin: 0 0 .3rem; }
+.txo-iv-details { font-size: .8rem; margin-bottom: .3rem; min-height: 2.5em; }
+.txo-iv-plot { width: 100%; height: 340px; }
+.txo-iv-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.txo-iv-toolbar p { margin: 0; font-size: .9rem; }
+.txo-iv-reset { flex-shrink: 0; background: transparent; color: inherit; border: 1px solid rgba(127,127,127,.4); border-radius: 6px; padding: .35rem .65rem; font-size: .8rem; cursor: pointer; }
+.txo-iv-reset:disabled { opacity: .5; cursor: default; }
+.txo-iv-reset:focus-visible { outline: 3px solid #78a7c8; outline-offset: 2px; }
+body.quarto-dark .txo-iv-card { background: #22272b; }
+@media (max-width: 767px) {
+  .txo-iv-grid { grid-template-columns: minmax(0, 1fr); }
+  .txo-iv-toolbar { flex-wrap: wrap; }
+}
+</style>
+```
+
 ### TAIEX Futures (TXF) IV curve
 
-Only TXF futures contracts with matching expiration dates are included. The chart updates daily, displaying the four nearest expiration dates.
+Only TXF futures contracts with matching expiration dates are included. The chart updates daily, displaying up to four nearest expiration dates.
 
-<div class="project-card">
-  <p id="tx-status">Loading the latest TX curve…</p>
-  <img id="tx-chart" src="https://raw.githubusercontent.com/siang-dai/txo-vix-iv/main/output/latest_tx_iv_calibration.png" loading="lazy" decoding="async" width="2698" height="1843" alt="Latest TXO implied-volatility curve using same-expiry TX futures" style="width:100%; height:auto; max-width:1100px;">
+```{=html}
+<div class="project-card txo-iv-card">
+  <div class="txo-iv-toolbar">
+    <p id="tx-status" role="status">Loading the latest TX curve…</p>
+    <button id="tx-iv-reset" class="txo-iv-reset" type="button" disabled>Reset zoom</button>
+  </div>
+  <div id="tx-chart" class="txo-iv-grid" aria-busy="true"></div>
 </div>
+```
 
 ### Mini-TAIEX Futures (MXF) IV curve
 
-Only MXF futures contracts with matching expiration dates are included. The chart updates daily, displaying the four nearest expiration dates.
+Only MXF futures contracts with matching expiration dates are included. The chart updates daily, displaying up to four nearest expiration dates.
 
-<div class="project-card">
-  <p id="mtx-status">Loading the latest MXF curve…</p>
-  <img id="mtx-chart" src="https://raw.githubusercontent.com/siang-dai/txo-vix-iv/main/output/latest_mtx_iv_calibration.png" loading="lazy" decoding="async" width="2702" height="1843" alt="Latest TXO implied-volatility curve using same-expiry MXF futures" style="width:100%; height:auto; max-width:1100px;">
+```{=html}
+<div class="project-card txo-iv-card">
+  <div class="txo-iv-toolbar">
+    <p id="mtx-status" role="status">Loading the latest MXF curve…</p>
+    <button id="mtx-iv-reset" class="txo-iv-reset" type="button" disabled>Reset zoom</button>
+  </div>
+  <div id="mtx-chart" class="txo-iv-grid" aria-busy="true"></div>
 </div>
+```
 
 ```{=html}
 <script>
@@ -688,72 +720,114 @@ Only MXF futures contracts with matching expiration dates are included. The char
   // TX / MXF IV charts
   // ------------------------------------------------------------
 
-  function setStaticChart(
-    imageId,
-    statusId
-  ) {
-    const image =
-      document.getElementById(imageId);
+  const ivPlots = [];
 
-    const chartStatus =
-      document.getElementById(statusId);
-
-    image.onerror = () => {
-      chartStatus.textContent =
-        "The chart is not available yet. " +
-        "Run the repository workflow once.";
-    };
+  async function renderIvProduct(payload, product, prefix) {
+    const container = document.getElementById(`${prefix}-chart`);
+    const chartStatus = document.getElementById(`${prefix}-status`);
+    const reset = document.getElementById(`${prefix}-iv-reset`);
+    const data = payload.products[product];
+    if (!data || !Array.isArray(data.curves)) throw new Error("IV curve data unavailable");
+    container.replaceChildren();
+    const plots = [];
+    for (const curve of data.curves) {
+      const panel = document.createElement("section");
+      panel.className = "txo-iv-panel";
+      const title = document.createElement("h4");
+      title.textContent = `TXO ${curve.option_contract} → ${product} ${curve.futures_contract}`;
+      const details = document.createElement("p");
+      details.className = "txo-iv-details";
+      details.textContent = `Expiry ${curve.expiry} · DTE ${curve.days_to_expiry} · ` +
+        `${curve.puts.length + curve.calls.length} points · F = ${curve.forward.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
+      panel.append(title, details);
+      container.append(panel);
+      if (!curve.puts.length && !curve.calls.length) {
+        const empty = document.createElement("p");
+        empty.textContent = "No eligible OTM quotes for this expiration.";
+        panel.append(empty);
+        continue;
+      }
+      const plot = document.createElement("div");
+      plot.className = "txo-iv-plot";
+      plot.setAttribute("role", "img");
+      plot.setAttribute("aria-label", `OTM implied volatility by strike for TXO ${curve.option_contract}, using ${product} ${curve.futures_contract}`);
+      panel.append(plot);
+      const traces = [["puts", "OTM Put", "#297fb8", "circle"], ["calls", "OTM Call", "#d78328", "square"]]
+        .filter(([key]) => curve[key].length)
+        .map(([key, name, color, symbol]) => ({
+          type: "scatter", mode: "markers", name,
+          x: curve[key].map(point => point[0]), y: curve[key].map(point => point[1]),
+          customdata: curve[key].map(point => point[2]),
+          marker: { color, symbol, size: 5, opacity: .85 },
+          hovertemplate: `TXO ${curve.option_contract} · ${payload.as_of_date}` +
+            "<br>Strike: %{x:,.0f}<br>IV: %{y:.2f}%" +
+            "<br>Option price: %{customdata:,.2f} points<extra>%{fullData.name}</extra>"
+        }));
+      await Plotly.newPlot(plot, traces, {
+        margin: { l: 58, r: 12, t: 12, b: 85 },
+        xaxis: { title: {text: "Strike price"}, tickformat: ",.0f", nticks: 4,
+          gridcolor: "rgba(127,127,127,.18)", automargin: true },
+        yaxis: { title: {text: "Implied volatility (%)"}, gridcolor: "rgba(127,127,127,.18)", automargin: true },
+        shapes: [{ type: "line", xref: "x", yref: "paper", x0: curve.forward, x1: curve.forward,
+          y0: 0, y1: 1, line: { color: "#888", width: 1.5, dash: "dash" } }],
+        paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
+        font: { color: getComputedStyle(document.body).color, size: 11 },
+        legend: { orientation: "h", x: 0, y: -.3 },
+        hovermode: "closest", dragmode: "zoom", autosize: true
+      }, { responsive: true, displayModeBar: false, scrollZoom: false });
+      plots.push(plot);
+      ivPlots.push(plot);
+    }
+    if (!data.curves.length) {
+      container.textContent = `No option expiration has an exact same-expiry ${product} futures match.`;
+    }
+    reset.disabled = !plots.length;
+    reset.addEventListener("click", () => {
+      plots.forEach(plot => Plotly.relayout(plot, {"xaxis.autorange": true, "yaxis.autorange": true}));
+    });
+    chartStatus.textContent = `Latest trading date: ${payload.as_of_date} · ` +
+      `${data.plotted_points} OTM IV points · Generated in Taiwan: ${payload.generated_at_taipei}`;
+    container.setAttribute("aria-busy", "false");
   }
 
-  setStaticChart(
-    "tx-chart",
-    "tx-status"
-  );
-
-  setStaticChart(
-    "mtx-chart",
-    "mtx-status"
-  );
-
-  fetch(
-    `${rawOutput}/latest_iv.json`
-  )
-    .then(response => {
-      if (!response.ok) {
-        throw new Error("IV metadata unavailable");
-      }
-
+  Promise.all([
+    fetch(`${rawOutput}/latest_iv.json`, {cache: "no-cache"}).then(response => {
+      if (!response.ok) throw new Error("IV data unavailable");
       return response.json();
-    })
-    .then(meta => {
-      const tx = meta.products.TX;
-      const mtx = meta.products.MTX;
+    }),
+    plotlyReady
+  ]).then(async ([payload]) => {
+    if (payload.schema !== 1 || JSON.stringify(payload.point_columns) !== JSON.stringify(["strike", "iv_pct", "option_price"])) {
+      throw new Error("Unsupported IV chart data");
+    }
+    const results = await Promise.allSettled([renderIvProduct(payload, "TX", "tx"), renderIvProduct(payload, "MTX", "mtx")]);
+    const failed = results.find(result => result.status === "rejected");
+    if (failed) throw failed.reason;
+  }).catch(error => {
+    console.error("IV chart error:", error);
+    ivPlots.forEach(plot => Plotly.purge(plot));
+    for (const prefix of ["tx", "mtx"]) {
+      const container = document.getElementById(`${prefix}-chart`);
+      container.replaceChildren();
+      container.setAttribute("aria-busy", "false");
+      document.getElementById(`${prefix}-iv-reset`).disabled = true;
+      document.getElementById(`${prefix}-status`).textContent = "IV chart data could not be loaded. Please try again later.";
+    }
+  });
 
-      document.getElementById(
-        "tx-status"
-      ).textContent =
-        `Latest trading date: ${meta.as_of_date} || ` +
-        `${tx.plotted_points} OTM IV points || ` +
-        `Generated in Taiwan: ${meta.generated_at_taipei}`;
+  let ivThemeTimer;
+  function refreshIvTheme() {
+    clearTimeout(ivThemeTimer);
+    ivThemeTimer = setTimeout(() => {
+      const color = getComputedStyle(document.body).color;
+      ivPlots.filter(plot => plot.data).forEach(plot => Plotly.relayout(plot, {"font.color": color}));
+    }, 100);
+  }
+  new MutationObserver(refreshIvTheme).observe(document.body,
+    {attributes: true, attributeFilter: ["class", "data-bs-theme"]});
+  // Quarto can load an alternate stylesheet after changing the body class.
+  document.querySelectorAll("link.quarto-color-scheme").forEach(link => link.addEventListener("load", refreshIvTheme));
 
-      document.getElementById(
-        "mtx-status"
-      ).textContent =
-        `Latest trading date: ${meta.as_of_date} || ` +
-        `${mtx.plotted_points} OTM IV points || ` +
-        `Generated in Taiwan: ${meta.generated_at_taipei}`;
-    })
-    .catch(() => {
-      document.getElementById(
-        "tx-status"
-      ).textContent =
-        "Latest automatically generated TX IV curve.";
-
-      document.getElementById(
-        "mtx-status"
-      ).textContent =
-        "Latest automatically generated MTX IV curve.";
-    });
 })();
 </script>
 ```
