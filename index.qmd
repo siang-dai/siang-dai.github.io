@@ -17,8 +17,6 @@ about:
     #   href: https://scholar.google.com/
 ---
 
-## Biography
-
 
 ## Research interests
 - Mathematical Finance
