@@ -99,6 +99,7 @@
       if (!Array.isArray(data.dates) || !data.dates.length) throw new Error("No observations are available.");
       const shown = visibleTable(data);
       const range = [shown.dates[0], shown.dates.at(-1)];
+      const vix30 = !paired && ["TAIEX", "SPX"].includes(state.a) && a.vix30;
       let priceTraces, metricTraces, priceTitle, metricTitle;
       if (!paired) {
         priceTraces = [line(state.a, shown.dates, shown.price, palette[0])];
@@ -108,11 +109,16 @@
           line("GARCH · next session", shown.dates, shown.garch, palette[2], "dot"),
           line("Instantaneous · Fourier", shown.dates, shown.instantaneous, palette[3])
         ];
+        if (vix30) {
+          if (!shown.vix30 || shown.vix30.length !== shown.dates.length) throw new Error("30 day VIX data is incomplete. Please try again later.");
+          metricTraces.push(line("30 day VIX", shown.dates, shown.vix30, "#c2545b", "dashdot"));
+        }
         priceTitle = a.currency === "points" || !a.adjusted ? "Index level" : `Adjusted price (${a.currency})`;
         metricTitle = "Annualized volatility (%)";
         el("price-title").textContent = `${state.a} · ${a.name}`;
-        el("metric-title").textContent = "Four volatility estimators";
+        el("metric-title").textContent = "Volatility estimators";
         el("interpretation").textContent = "GARCH shows the next-session forecast at its origin date. The other curves estimate volatility using information through that close.";
+        if (vix30) el("interpretation").textContent += ` 30 day VIX uses option-implied total variance, linearly interpolated between maturities bracketing 30 calendar days from ${vix30.source}. Available from ${vix30.history_start}; missing dates remain gaps.`;
       } else {
         const pa = data.a === state.a ? shown.price_a : shown.price_b;
         const pb = data.a === state.a ? shown.price_b : shown.price_a;
@@ -129,6 +135,7 @@
       const pLayout = layout(priceTitle, range);
       if (paired) { pLayout.margin.b = 95; pLayout.legend.y = -0.45; }
       const mLayout = layout(metricTitle, range, true);
+      if (vix30 && root.clientWidth < 500) mLayout.margin.b = 125;
       if (paired) {
         mLayout.yaxis.range = [-1.05, 1.05];
         mLayout.yaxis.tickvals = [-1, -.5, 0, .5, 1];
@@ -158,8 +165,8 @@
       el("warning").textContent = warnings.join(" ");
       el("warning").hidden = !warnings.length;
       const basis = paired ? `${a.id}: ${a.as_of} · ${b.id}: ${b.as_of} · common date: ${meta.as_of}` : `${a.adjusted ? "Adjusted close" : "Index close"} · ${a.source} · latest: ${meta.as_of}`;
-      el("status").textContent = `${range[0]} – ${range[1]} · ${shown.dates.length} observations · ${basis}`;
-      metricChart.setAttribute("aria-label", paired ? "Historical and instantaneous return correlations" : "Historical, EWMA, GARCH and instantaneous volatility estimates");
+      el("status").textContent = `${range[0]} – ${range[1]} · ${shown.dates.length} observations · ${basis}${vix30 ? ` · 30 day VIX · ${vix30.source} · latest: ${vix30.as_of}` : ""}`;
+      metricChart.setAttribute("aria-label", paired ? "Historical and instantaneous return correlations" : `Historical, EWMA, GARCH and instantaneous volatility estimates${vix30 ? ", and 30 day VIX" : ""}`);
       el("reset").disabled = false;
     } catch (error) {
       if (mine !== revision) return;

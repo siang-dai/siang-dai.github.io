@@ -238,7 +238,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
         "<b>%{text}</b>" +
         "<br>Expiration: %{customdata[0]}" +
         "<br>Days to expiration: %{x:.0f}" +
-        "<br>VIX-style IV: %{y:.2f}%" +
+        "<br>VIX: %{y:.2f}%" +
         "<br>Implied forward: %{customdata[1]:,.2f}" +
         "<extra></extra>",
       line: {
@@ -596,7 +596,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
         y: vix,
         xaxis: "x2",
         yaxis: "y2",
-        name: "Front-expiry VIX-style IV",
+        name: "Front-expiry VIX",
         customdata: contracts,
         marker: {
           size: 6
@@ -607,7 +607,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
         hovertemplate:
           "<b>%{x}</b>" +
           "<br>Contract: %{customdata}" +
-          "<br>VIX-style IV: %{y:.2f}%" +
+          "<br>VIX: %{y:.2f}%" +
           "<extra></extra>"
       };
 
@@ -616,7 +616,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
       const frontLayout = {
         title: {
-          text: "TAIEX vs Front-expiry VIX-style IV",
+          text: "TAIEX vs Front-expiry VIX",
           x: 0.5,
           font: {
             size: 19
@@ -650,7 +650,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
         },
         yaxis2: {
           domain: [0, 0.42],
-          title: "VIX-style IV (%)",
+          title: "VIX (%)",
           gridcolor: "rgba(127,127,127,0.18)",
           automargin: true
         },

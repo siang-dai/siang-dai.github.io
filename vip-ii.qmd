@@ -45,7 +45,7 @@ toc: false
       <h2 id="vip-price-title">Price history</h2>
       <div id="vip-price" class="vip-chart vip-price" role="img" aria-label="Daily price history"></div>
       <div class="vip-chart-heading">
-        <h2 id="vip-metric-title">Volatility comparison</h2>
+        <h2 id="vip-metric-title">Volatility estimators</h2>
         <button id="vip-reset" type="button" disabled>Reset zoom</button>
       </div>
       <div id="vip-metric" class="vip-chart vip-metric" role="img" aria-label="Comparison of daily volatility estimators"></div>
