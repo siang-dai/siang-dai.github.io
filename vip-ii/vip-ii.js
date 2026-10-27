@@ -8,7 +8,11 @@
   const cache = new Map();
   let manifest, current, revision = 0, syncing = false, initialized = false, drawnKey;
   let rendering = Promise.resolve();
-  const state = { view: "volatility", a: "SPY", b: "TLT", months: 6 };
+  const selections = {
+    volatility: { a: "TAIEX", b: "SPX" },
+    correlation: { a: "TAIEX", b: "SPX" }
+  };
+  const state = { view: "volatility", ...selections.volatility, months: 6 };
   const palette = ["#297fb8", "#d78328", "#9168be", "#289c87"];
   const plotlyReady = new Promise((resolve, reject) => {
     if (window.Plotly) { resolve(); return; }
@@ -111,14 +115,14 @@
         ];
         if (vix30) {
           if (!shown.vix30 || shown.vix30.length !== shown.dates.length) throw new Error("30 day VIX data is incomplete. Please try again later.");
-          metricTraces.push(line("30 day VIX", shown.dates, shown.vix30, "#c2545b", "dashdot"));
+          metricTraces.push(line("30 day VIX", shown.dates, shown.vix30, "#c2545b"));
         }
         priceTitle = a.currency === "points" || !a.adjusted ? "Index level" : `Adjusted price (${a.currency})`;
         metricTitle = "Annualized volatility (%)";
         el("price-title").textContent = `${state.a} · ${a.name}`;
         el("metric-title").textContent = "Volatility estimators";
         el("interpretation").textContent = "GARCH shows the next-session forecast at its origin date. The other curves estimate volatility using information through that close.";
-        if (vix30) el("interpretation").textContent += ` 30 day VIX uses option-implied total variance, linearly interpolated between maturities bracketing 30 calendar days from ${vix30.source}. Available from ${vix30.history_start}; missing dates remain gaps.`;
+        if (vix30) el("interpretation").textContent += ` 30 day VIX shows the official daily ${vix30.index_name} from ${vix30.source}, aligned with prices by local trading date.`;
       } else {
         const pa = data.a === state.a ? shown.price_a : shown.price_b;
         const pb = data.a === state.a ? shown.price_b : shown.price_a;
@@ -204,16 +208,22 @@
       el("asset-b").value = state.b;
     }
     for (const option of el("asset-b").options) option.disabled = option.value === state.a;
+    selections[state.view] = { a: state.a, b: state.b };
     return draw();
   }
 
   root.querySelectorAll("[data-view]").forEach(button => button.addEventListener("click", () => {
     state.view = button.dataset.view;
+    Object.assign(state, selections[state.view]);
     root.querySelectorAll("[data-view]").forEach(tab => tab.setAttribute("aria-selected", String(tab === button)));
     el("analysis").setAttribute("aria-labelledby", button.id);
     el("second-field").hidden = state.view !== "correlation";
     el("first-label").textContent = state.view === "correlation" ? "First asset" : "Asset";
-    if (manifest) selection();
+    if (manifest) {
+      el("asset-a").value = state.a;
+      el("asset-b").value = state.b;
+      selection();
+    }
   }));
   el("asset-a").addEventListener("change", selection);
   el("asset-b").addEventListener("change", selection);

@@ -77,7 +77,7 @@ toc: false
 
   <footer class="vip-footer">
     <p>VIP II builds on the original Volatility Information Platform by Erik Apostol and its contributors: <a href="https://github.com/ErikApostol/volatility_index_platform" target="_blank" rel="noopener">original VIP repository</a>.</p>
-    <p class="vip-small"><a href="https://github.com/siang-dai/VIP-II" target="_blank" rel="noopener">VIP II source &amp; methodology</a> · <a href="https://github.com/siang-dai/VIP-II/actions/workflows/update.yml" target="_blank" rel="noopener">Update status</a> · Data: <a href="https://finance.yahoo.com/" target="_blank" rel="noopener">Yahoo Finance</a> and <a href="https://www.cboe.com/tradable_products/vix/vix_historical_data/" target="_blank" rel="noopener">Cboe VIX history</a>. Research estimates; source terms apply.</p>
+    <p class="vip-small"><a href="https://github.com/siang-dai/VIP-II" target="_blank" rel="noopener">VIP II source &amp; methodology</a> · <a href="https://github.com/siang-dai/VIP-II/actions/workflows/update.yml" target="_blank" rel="noopener">Update status</a> · Data: <a href="https://finance.yahoo.com/" target="_blank" rel="noopener">Yahoo Finance</a>, <a href="https://www.cboe.com/tradable_products/vix/vix_historical_data/" target="_blank" rel="noopener">Cboe VIX history</a> and <a href="https://www.taifex.com.tw/indes/index.aspx" target="_blank" rel="noopener">TAIFEX</a>. Research estimates; source terms apply.</p>
   </footer>
 </div>
 <script src="vip-ii/vip-ii.js" defer></script>
