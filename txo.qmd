@@ -13,6 +13,8 @@ body-classes: observatory-page
 
 The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a recorded trading date below to inspect its VIX term structure and option volume together. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
+Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the best bid by more than 50 index points **and** is more than 10 times the bid. The volume chart shows all reported trades.
+
 ```{=html}
 <div class="project-card vix-interactive-card txo-history-card">
   <div class="txo-history-controls">
