@@ -298,10 +298,13 @@ Only MXF futures contracts with matching expiration dates are included. The char
       `move the slider to inspect the last 30 calendar days.`;
   }
 
-  function renderVolume(volumeRows, date) {
+  function renderVolume(volumeRows, date, expirationDates) {
     const daily = volumeRows
       .filter(row => row.Date === date)
       .sort((a, b) =>
+        (expirationDates.get(a.Expiration_Month) ?? Infinity)
+        - (expirationDates.get(b.Expiration_Month) ?? Infinity)
+        ||
         String(a.Expiration_Month).localeCompare(
           String(b.Expiration_Month)
         )
@@ -342,6 +345,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
       xaxis: {
         title: "Expiration",
         type: "category",
+        categoryorder: "array",
+        categoryarray: daily.map(row => row.Expiration_Month),
         automargin: true
       },
       yaxis: {
@@ -435,6 +440,13 @@ Only MXF futures contracts with matching expiration dates are included. The char
       const rows =
         parseCsv(vixText);
 
+      // Include earlier trading dates so contracts expiring today keep their order.
+      const expirationDates = new Map(
+        rows
+          .map(row => [row.Expiration_Month, Date.parse(row.Expiration_Date)])
+          .filter(([, expiration]) => Number.isFinite(expiration))
+      );
+
       const volumeRows =
         parseVolumeCsv(volumeText);
 
@@ -490,7 +502,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
         renderVolume(
           volumeRows,
-          selectedDate
+          selectedDate,
+          expirationDates
         );
       }
 
