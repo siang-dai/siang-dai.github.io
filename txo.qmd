@@ -9,15 +9,23 @@ body-classes: observatory-page
 <script src="observatory/presentation.js"></script>
 ```
 
-## VIX (Volatility Index) term structure
+## VIX term structure and option volume {#vix-volatility-index-term-structure}
 
-The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). VIX for each expiration date is calculated, and a daily static term-structure chart is published. The methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
+The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a recorded trading date below to inspect its VIX term structure and option volume together. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
 ```{=html}
-<div class="project-card vix-interactive-card">
-  <p id="vix-status">Loading VIX term-structure history…</p>
-
-  <div id="vix-term-chart"></div>
+<div class="project-card vix-interactive-card txo-history-card">
+  <div class="txo-history-controls">
+    <label for="vix-history-date">Trading date · both charts</label>
+    <div class="txo-history-navigation">
+      <button id="vix-prev-date" type="button" disabled aria-label="Previous trading day" title="Previous trading day">←</button>
+      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart">
+        <option>Loading dates…</option>
+      </select>
+      <button id="vix-next-date" type="button" disabled aria-label="Next trading day" title="Next trading day">→</button>
+    </div>
+  </div>
+  <p id="vix-history-help" class="txo-history-help">Drag the slider or use the arrows to browse recorded trading days. Both charts show the same selected date.</p>
 
   <div class="vix-slider-wrap">
     <input
@@ -28,7 +36,9 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
       step="1"
       value="0"
       disabled
-      aria-label="Select VIX term structure trading date"
+      aria-label="Select trading date for VIX and option volume"
+      aria-describedby="vix-history-help"
+      aria-controls="vix-term-chart vix-volume-chart"
     >
 
     <div class="vix-slider-labels">
@@ -38,12 +48,15 @@ The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com
     </div>
   </div>
 
-  <div class="observatory-subsection">
-    <p id="vix-volume-status">Loading TXO option volume…</p>
-
-    <div
-      id="vix-volume-chart"
-    ></div>
+  <div class="txo-history-grid">
+    <div class="txo-history-panel">
+      <p id="vix-status">Loading VIX term-structure history…</p>
+      <div id="vix-term-chart"></div>
+    </div>
+    <div class="txo-history-panel">
+      <p id="vix-volume-status">Loading TXO option volume…</p>
+      <div id="vix-volume-chart"></div>
+    </div>
   </div>
 </div>
 ```
@@ -132,6 +145,10 @@ Only MXF futures contracts with matching expiration dates are included. The char
   const slider =
     document.getElementById("vix-date-slider");
 
+  const dateSelect = document.getElementById("vix-history-date");
+  const previousDate = document.getElementById("vix-prev-date");
+  const nextDate = document.getElementById("vix-next-date");
+
   const startLabel =
     document.getElementById("vix-start-date");
 
@@ -212,14 +229,31 @@ Only MXF futures contracts with matching expiration dates are included. The char
       );
   }
 
-  function isoDate(value) {
-    return new Date(`${value}T00:00:00Z`);
+  function renderEmptyHistoryChart(element, title, message) {
+    ObservatoryCharts.react(element, [], {
+      title: { text: title },
+      xaxis: { visible: false },
+      yaxis: { visible: false },
+      annotations: [{
+        text: message, x: 0.5, y: 0.5,
+        xref: "paper", yref: "paper", showarrow: false
+      }],
+      margin: { l: 16, r: 16, t: 12, b: 16 },
+      showlegend: false
+    }, { responsive: true, displayModeBar: false, displaylogo: false });
   }
 
   function renderTermStructure(rows, date) {
     const daily = rows
       .filter(row => row.Date === date)
       .sort((a, b) => a.Days_to_Exp - b.Days_to_Exp);
+
+    if (!daily.length) {
+      renderEmptyHistoryChart(chart, `TXO VIX Term Structure — ${date}`,
+        "No VIX data recorded for this date.");
+      status.textContent = `Trading date: ${date} · No VIX data available.`;
+      return;
+    }
 
     const bodyColor =
       getComputedStyle(document.body).color;
@@ -290,12 +324,9 @@ Only MXF futures contracts with matching expiration dates are included. The char
       }
     );
 
-    selectedLabel.textContent = date;
-
     status.textContent =
       `Trading date: ${date} · ` +
-      `${daily.length} expirations · ` +
-      `move the slider to inspect the last 30 calendar days.`;
+      `${daily.length} expirations`;
   }
 
   function renderVolume(volumeRows, date, expirationDates) {
@@ -311,7 +342,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
       );
 
     if (!daily.length) {
-      Plotly.purge(volumeChart);
+      renderEmptyHistoryChart(volumeChart, `TXO Option Volume by Expiration — ${date}`,
+        "No option-volume data recorded for this date.");
 
       volumeStatus.textContent =
         `No option-volume data available for ${date}.`;
@@ -452,48 +484,44 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
       const allDates = [
         ...new Set(
-          rows.map(row => row.Date)
+          [...rows, ...volumeRows].map(row => row.Date)
         )
       ].sort();
 
       if (!allDates.length) {
-        throw new Error("No VIX history rows");
-      }
-
-      const latestDate =
-        allDates[allDates.length - 1];
-
-      const cutoff =
-        isoDate(latestDate);
-
-      cutoff.setUTCDate(
-        cutoff.getUTCDate() - 29
-      );
-
-      const recentDates =
-        allDates.filter(
-          date => isoDate(date) >= cutoff
-        );
-
-      if (!recentDates.length) {
-        throw new Error("No recent VIX dates");
+        throw new Error("No trading history rows");
       }
 
       slider.min = "0";
-      slider.max = String(recentDates.length - 1);
+      slider.max = String(allDates.length - 1);
       slider.step = "1";
-      slider.value = String(recentDates.length - 1);
+      slider.value = String(allDates.length - 1);
       slider.disabled = false;
 
+      dateSelect.replaceChildren(...allDates.map(date => {
+        const option = document.createElement("option");
+        option.value = date;
+        option.textContent = date;
+        return option;
+      }));
+      dateSelect.disabled = false;
+
       startLabel.textContent =
-        recentDates[0];
+        allDates[0];
 
       endLabel.textContent =
-        recentDates[recentDates.length - 1];
+        allDates[allDates.length - 1];
 
       function updateFromSlider() {
-        const selectedDate =
-          recentDates[Number(slider.value)];
+        const index = Number(slider.value);
+        const selectedDate = allDates[index];
+        if (!selectedDate) return;
+
+        selectedLabel.textContent = selectedDate;
+        dateSelect.value = selectedDate;
+        slider.setAttribute("aria-valuetext", selectedDate);
+        previousDate.disabled = index === 0;
+        nextDate.disabled = index === allDates.length - 1;
 
         renderTermStructure(
           rows,
@@ -511,6 +539,21 @@ Only MXF futures contracts with matching expiration dates are included. The char
         "input",
         updateFromSlider
       );
+
+      dateSelect.addEventListener("change", () => {
+        const index = allDates.indexOf(dateSelect.value);
+        if (index < 0) return;
+        slider.value = String(index);
+        updateFromSlider();
+      });
+      previousDate.addEventListener("click", () => {
+        slider.value = String(Math.max(0, Number(slider.value) - 1));
+        updateFromSlider();
+      });
+      nextDate.addEventListener("click", () => {
+        slider.value = String(Math.min(allDates.length - 1, Number(slider.value) + 1));
+        updateFromSlider();
+      });
 
       updateFromSlider();
     })
@@ -536,6 +579,9 @@ Only MXF futures contracts with matching expiration dates are included. The char
         "Option-volume history could not be loaded.";
 
       slider.disabled = true;
+      dateSelect.disabled = true;
+      previousDate.disabled = true;
+      nextDate.disabled = true;
     });
 
   // ------------------------------------------------------------
