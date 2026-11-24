@@ -85,20 +85,16 @@ body.observatory-page {
 .observatory-page .txo-history-navigation :focus-visible { outline: 3px solid #78a7c8; outline-offset: 3px; }
 .observatory-page .txo-history-help { font-size: .8rem; opacity: .75; margin: .6rem 0 0; }
 .observatory-page .txo-history-grid {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin-top: 1.4rem;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; margin-top: 1.4rem;
 }
 .observatory-page .txo-history-panel { min-width: 0; }
+.observatory-page .txo-history-panel + .txo-history-panel {
+  border-top: 1px solid var(--observatory-line); padding-top: 1.25rem;
+}
 .observatory-page .txo-history-card :is(#vix-status, #vix-volume-status) {
-  min-height: 3.3em; margin-bottom: .5rem; border: 0; padding: 0;
+  margin-bottom: .5rem; border: 0; padding: 0;
 }
-.observatory-page .txo-history-card .observatory-chart-title { min-height: 3em; margin-top: 0; }
-.observatory-page .txo-history-card :is(#vix-term-chart, #vix-volume-chart) { height: 380px; }
-@media (max-width: 991px) {
-  .observatory-page .txo-history-grid { grid-template-columns: minmax(0, 1fr); }
-  .observatory-page .txo-history-panel + .txo-history-panel { border-top: 1px solid var(--observatory-line); padding-top: 1.25rem; }
-  .observatory-page .txo-history-card :is(#vix-status, #vix-volume-status),
-  .observatory-page .txo-history-card .observatory-chart-title { min-height: 0; }
-}
+.observatory-page .txo-history-card .observatory-chart-title { margin-top: 0; }
 .observatory-page .txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1.75rem; }
 .observatory-page .txo-iv-panel { min-width: 0; }
 .observatory-page .txo-iv-panel h4 { font-size: .95rem; font-weight: 600; margin: 0 0 .45rem; line-height: 1.5; }
