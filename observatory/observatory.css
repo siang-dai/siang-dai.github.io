@@ -104,11 +104,10 @@ body.observatory-page {
 }
 .observatory-page .txo-history-card .observatory-chart-title { grid-area: title; margin: 0; }
 .observatory-page .txo-liquidity {
-  grid-column: 1 / -1; min-width: 0; border-top: 1px solid var(--observatory-line); padding-top: .6rem;
+  margin-top: .6rem; border-top: 1px solid var(--observatory-line); padding-top: .6rem;
 }
 .observatory-page #liquidity-expiration { margin-left: .35rem; font-weight: normal; }
 .observatory-page #liquidity-status { margin: .25rem 0 0; font-size: .8rem; }
-.observatory-page #liquidity-chart { width: 100%; height: clamp(250px, 34vh, 350px); }
 .observatory-page .txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1.75rem; }
 .observatory-page .txo-iv-panel { min-width: 0; }
 .observatory-page .txo-iv-panel h4 { font-size: .95rem; font-weight: 600; margin: 0 0 .45rem; line-height: 1.5; }

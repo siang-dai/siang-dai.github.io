@@ -60,18 +60,18 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       <p id="vix-volume-status">Loading TXO option volume…</p>
       <div id="vix-volume-chart"></div>
     </div>
-    <div class="txo-liquidity" id="liquidity">
-      <div class="txo-history-controls">
-        <h3 class="observatory-chart-title">Liquidity by strike</h3>
-        <label for="liquidity-expiration">Expiration
-          <select id="liquidity-expiration" disabled aria-controls="liquidity-chart">
-            <option>Loading expirations…</option>
-          </select>
-        </label>
-      </div>
-      <p id="liquidity-status" role="status"></p>
-      <div id="liquidity-chart"></div>
+  </div>
+  <div class="txo-liquidity" id="liquidity">
+    <div class="txo-history-controls">
+      <h3 class="observatory-chart-title">Liquidity by strike</h3>
+      <label for="liquidity-expiration">Expiration
+        <select id="liquidity-expiration" disabled aria-controls="liquidity-chart">
+          <option>Loading expirations…</option>
+        </select>
+      </label>
     </div>
+    <p id="liquidity-status" role="status"></p>
+    <div id="liquidity-chart" style="height: clamp(250px, 34vh, 350px)"></div>
   </div>
 </div>
 ```
