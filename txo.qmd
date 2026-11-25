@@ -10,11 +10,11 @@ body-classes: observatory-page txo-page
 <script src="observatory/presentation.js"></script>
 ```
 
-## VIX, option volume and put/call ratios {#vix-volatility-index-term-structure}
+## VIX term structure and option volume {#vix-volatility-index-term-structure}
 
-The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and volume by expiration. The two ratio charts show market-wide history through that date. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
+The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and volume by expiration. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
-Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the best bid by more than 50 index points **and** is more than 10 times the bid. Volume includes both sessions. Closing open interest excludes contracts settled that day. Ratios follow the [TAIFEX Put/Call Ratio](https://www.taifex.com.tw/cht/3/pcRatio) convention: total puts divided by total calls, expressed as a percentage.
+Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the best bid by more than 50 index points **and** is more than 10 times the bid. Volume includes both sessions.
 
 ```{=html}
 <div class="project-card vix-interactive-card txo-history-card">
@@ -22,13 +22,13 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
     <label for="vix-history-date">Trading date</label>
     <div class="txo-history-navigation">
       <button id="vix-prev-date" type="button" disabled aria-label="Previous trading day" title="Previous trading day">←</button>
-      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart volume-ratio-chart oi-ratio-chart">
+      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart">
         <option>Loading dates…</option>
       </select>
       <button id="vix-next-date" type="button" disabled aria-label="Next trading day" title="Next trading day">→</button>
     </div>
   </div>
-  <p id="vix-history-help" class="visually-hidden">Drag the slider or use the arrows to change the trading date for all four charts.</p>
+  <p id="vix-history-help" class="visually-hidden">Drag the slider or use the arrows to change the trading date for both charts.</p>
 
   <div class="vix-slider-wrap">
     <input
@@ -39,9 +39,9 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       step="1"
       value="0"
       disabled
-      aria-label="Select trading date for VIX, option volume and put/call ratios"
+      aria-label="Select trading date for VIX and option volume"
       aria-describedby="vix-history-help"
-      aria-controls="vix-term-chart vix-volume-chart volume-ratio-chart oi-ratio-chart"
+      aria-controls="vix-term-chart vix-volume-chart"
     >
 
     <div class="vix-slider-labels">
@@ -60,31 +60,44 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       <p id="vix-volume-status">Loading TXO option volume…</p>
       <div id="vix-volume-chart"></div>
     </div>
-    <div class="txo-history-panel panel-volume-ratio">
-      <p id="volume-ratio-status">Loading volume ratio…</p>
-      <div id="volume-ratio-chart"></div>
-    </div>
-    <div class="txo-history-panel panel-oi-ratio">
-      <p id="oi-ratio-status">Loading open interest ratio…</p>
-      <div id="oi-ratio-chart"></div>
-    </div>
   </div>
 </div>
 ```
 
-### Front-expiry VIX vs TAIEX
+## Market history {#front-expiry-vix-vs-taiex}
 
-The nearest-expiry VIX is shown against the TAIEX close over the latest month, illustrating how short-dated implied volatility moves with the index.
+Each window ends on the latest shared trading day. The [TAIFEX put/call ratios](https://www.taifex.com.tw/cht/3/pcRatio) show total puts divided by total calls as a percentage. Closing open interest excludes contracts settled that day.
 
 ```{=html}
-<div class="project-card">
-  <p id="front-vix-taiex-status">
-    Loading TAIEX and nearest-expiry VIX history…
-  </p>
-
-  <div
-    id="front-vix-taiex-chart"
-  ></div>
+<div class="project-card txo-history-card">
+  <div class="spx-toolbar">
+    <p id="market-window-status" role="status">Loading market history…</p>
+    <label class="spx-horizon-label">Lookback
+      <select id="market-lookback" aria-controls="front-vix-chart taiex-chart volume-ratio-chart oi-ratio-chart" disabled>
+        <option value="30" selected>1M</option>
+        <option value="60">2M</option>
+        <option value="90">3M</option>
+      </select>
+    </label>
+  </div>
+  <div class="txo-history-grid" id="market-history-grid">
+    <div class="txo-history-panel">
+      <p id="front-vix-status"></p>
+      <div id="front-vix-chart"></div>
+    </div>
+    <div class="txo-history-panel">
+      <p id="volume-ratio-status"></p>
+      <div id="volume-ratio-chart"></div>
+    </div>
+    <div class="txo-history-panel">
+      <p id="taiex-status"></p>
+      <div id="taiex-chart"></div>
+    </div>
+    <div class="txo-history-panel">
+      <p id="oi-ratio-status"></p>
+      <div id="oi-ratio-chart"></div>
+    </div>
+  </div>
 </div>
 ```
 
@@ -436,36 +449,14 @@ Only MXF futures contracts with matching expiration dates are included. The char
     return [...daily.values()].sort((a, b) => a.Date.localeCompare(b.Date));
   }
 
-  function renderRatio(history, date, measure, id, title) {
-    const plot = document.getElementById(id + "-chart");
-    const label = document.getElementById(id + "-status");
-    const days = history.filter(row => row.Date <= date);
-    const values = days.map(row => row["Call_" + measure] > 0
-      ? 100 * row["Put_" + measure] / row["Call_" + measure] : null);
-    const latest = days.at(-1)?.Date === date ? values.at(-1) : null;
-    label.textContent = latest == null ? "Unavailable on this date" : latest.toFixed(2) + "%";
-    if (!values.some(value => value !== null)) {
-      renderEmptyHistoryChart(plot, title, "No ratio available through this date.");
-      return;
-    }
-    ObservatoryCharts.react(plot, [{
-      type: "scatter", mode: "lines+markers", x: days.map(row => row.Date), y: values,
-      marker: { size: days.map(row => row.Date === date ? 8 : 4) },
-      customdata: days.map(row => [row["Put_" + measure], row["Call_" + measure]]),
-      hovertemplate: "%{x|%Y-%m-%d}<br>Put/Call: %{y:.2f}%<br>Put: %{customdata[0]:,.0f}<br>Call: %{customdata[1]:,.0f}<extra></extra>"
-    }], {
-      title: { text: title },
-      xaxis: { type: "date", tickformat: "%b %d", nticks: 5 },
-      yaxis: { title: "Put / Call (%)" },
-      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 100, y1: 100,
-        line: { width: 1, dash: "dot", color: "rgba(127,127,127,.65)" }, layer: "below" }],
-      margin: { b: 40 }, showlegend: false
-    }, { responsive: true, displaylogo: false });
-  }
-
-  // ------------------------------------------------------------
-  // Load VIX history + option-volume history
-  // ------------------------------------------------------------
+  // Fetch volume once for both the snapshot and market history.
+  const volumeData = fetch(`${rawData}/option_volume_history.csv`, { cache: "no-cache" })
+    .then(response => {
+      if (!response.ok) throw new Error("Option volume history unavailable");
+      return response.text();
+    })
+    .then(parseVolumeCsv)
+    .catch(error => { console.warn(error); return []; });
 
   Promise.all([
     fetch(
@@ -479,37 +470,15 @@ Only MXF futures contracts with matching expiration dates are included. The char
         return response.text();
       }),
 
-    fetch(
-      `${rawData}/option_volume_history.csv`, { cache: "no-cache" }
-    )
-      .then(response => {
-        // Volume history is optional. If it is unavailable,
-        // keep the VIX term-structure chart working.
-        if (!response.ok) {
-          return "";
-        }
-
-        return response.text();
-      })
-      .catch(error => {
-        console.warn(
-          "Option-volume history unavailable:",
-          error
-        );
-
-        return "";
-      }),
+    volumeData,
     plotlyReady
   ])
     .then(([
       vixText,
-      volumeText
+      volumeRows
     ]) => {
       const rows =
         parseCsv(vixText);
-
-      const volumeRows = parseVolumeCsv(volumeText);
-      const marketHistory = sumMarketCounts(volumeRows);
 
       const allDates = [
         ...new Set(
@@ -558,8 +527,6 @@ Only MXF futures contracts with matching expiration dates are included. The char
         );
 
         renderVolume(volumeRows, selectedDate);
-        renderRatio(marketHistory, selectedDate, "Volume", "volume-ratio", "Put/Call ratio · Volume");
-        renderRatio(marketHistory, selectedDate, "OI", "oi-ratio", "Put/Call ratio · Open interest");
       }
 
       slider.addEventListener(
@@ -605,8 +572,6 @@ Only MXF futures contracts with matching expiration dates are included. The char
       volumeStatus.textContent =
         "Option-volume history could not be loaded.";
 
-      document.getElementById("volume-ratio-status").textContent = "Ratio history could not be loaded.";
-      document.getElementById("oi-ratio-status").textContent = "Ratio history could not be loaded.";
       slider.disabled = true;
       dateSelect.disabled = true;
       previousDate.disabled = true;
@@ -614,174 +579,79 @@ Only MXF futures contracts with matching expiration dates are included. The char
     });
 
   // ------------------------------------------------------------
-  // Front-expiry VIX vs TAIEX
-  // ------------------------------------------------------------
+  // Four market histories share a fixed calendar window, independent of the snapshot slider.
+  const lookback = document.getElementById("market-lookback");
+  const windowStatus = document.getElementById("market-window-status");
 
-  const frontChart =
-    document.getElementById("front-vix-taiex-chart");
+  function drawHistory(id, title, axisTitle, range, days, values, customdata, hovertemplate, ratio = false) {
+    const plot = document.getElementById(id + "-chart");
+    const last = days.at(-1)?.Date === range[1] ? values.at(-1) : null;
+    document.getElementById(id + "-status").textContent = Number.isFinite(last)
+      ? last.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (axisTitle.includes("%") ? "%" : "")
+      : "Unavailable";
+    if (!values.some(Number.isFinite)) {
+      renderEmptyHistoryChart(plot, title, "No data for this period.");
+      return;
+    }
+    ObservatoryCharts.react(plot, [{
+      type: "scatter", mode: "lines+markers", x: days.map(row => row.Date), y: values,
+      marker: { size: 4 }, customdata, hovertemplate: "%{x|%Y-%m-%d}<br>" + hovertemplate + "<extra></extra>"
+    }], {
+      title: { text: title },
+      xaxis: { type: "date", range, tickformat: "%b %d", nticks: 5 },
+      yaxis: { title: axisTitle },
+      shapes: ratio ? [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 100, y1: 100,
+        line: { width: 1, dash: "dot", color: "rgba(127,127,127,.65)" }, layer: "below" }] : [],
+      margin: { b: 40 }, showlegend: false
+    }, { responsive: true, displaylogo: false });
+  }
 
-  const frontStatus =
-    document.getElementById("front-vix-taiex-status");
-
-  Promise.all([
-    fetch(
-      `${rawOutput}/latest_front_vix_vs_taiex.json`
-    )
+  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json`, { cache: "no-cache" })
     .then(response => {
-      if (!response.ok) {
-        throw new Error(
-          "Front-expiry VIX / TAIEX data unavailable"
-        );
-      }
-
+      if (!response.ok) throw new Error("TAIEX history unavailable");
       return response.json();
-    }),
-    plotlyReady
-  ])
-    .then(([payload]) => {
-      const rows = payload.data;
-
-      if (!rows || !rows.length) {
-        throw new Error("No observations");
-      }
-
-      const dates =
-        rows.map(row => row.Date);
-
-      const taiex =
-        rows.map(row => Number(row.TAIEX_Close));
-
-      const vix =
-        rows.map(row => Number(row.Front_VIX));
-
-      const contracts =
-        rows.map(row => row.Contract);
-
-      const taiexTrace = {
-        type: "scatter",
-        mode: "lines+markers",
-        x: dates,
-        y: taiex,
-        xaxis: "x",
-        yaxis: "y",
-        name: "TAIEX Close",
-        marker: {
-          size: 6
-        },
-        line: {
-          width: 2
-        },
-        hovertemplate:
-          "<b>%{x}</b>" +
-          "<br>TAIEX Close: %{y:,.2f}" +
-          "<extra></extra>"
-      };
-
-      const vixTrace = {
-        type: "scatter",
-        mode: "lines+markers",
-        x: dates,
-        y: vix,
-        xaxis: "x2",
-        yaxis: "y2",
-        name: "Front-expiry VIX",
-        customdata: contracts,
-        marker: {
-          size: 6
-        },
-        line: {
-          width: 2
-        },
-        hovertemplate:
-          "<b>%{x}</b>" +
-          "<br>Contract: %{customdata}" +
-          "<br>VIX: %{y:.2f}%" +
-          "<extra></extra>"
-      };
-
-      const frontBodyColor =
-        getComputedStyle(document.body).color;
-
-      const frontLayout = {
-        title: {
-          text: "TAIEX vs Front-expiry VIX",
-          x: 0.5,
-          font: {
-            size: 19
-          }
-        },
-        xaxis: {
-          domain: [0, 1],
-          anchor: "y",
-          type: "date",
-          showticklabels: false,
-          showgrid: false
-        },
-        yaxis: {
-          domain: [0.57, 1],
-          title: "TAIEX Close",
-          gridcolor: "rgba(127,127,127,0.18)",
-          automargin: true
-        },
-        xaxis2: {
-          domain: [0, 1],
-          anchor: "y2",
-          matches: "x",
-          type: "date",
-          title: {
-            text: "Trading Date",
-            standoff: 10
-          },
-          tickformat: "%m-%d",
-          showgrid: false,
-          automargin: true
-        },
-        yaxis2: {
-          domain: [0, 0.42],
-          title: "VIX (%)",
-          gridcolor: "rgba(127,127,127,0.18)",
-          automargin: true
-        },
-        margin: {
-          l: 75,
-          r: 35,
-          t: 65,
-          b: 65
-        },
-        paper_bgcolor: "rgba(0,0,0,0)",
-        plot_bgcolor: "rgba(0,0,0,0)",
-        font: {
-          color: frontBodyColor
-        },
-        showlegend: false,
-        hovermode: "closest",
-        autosize: true
-      };
-
-      ObservatoryCharts.react(
-        frontChart,
-        [
-          taiexTrace,
-          vixTrace
-        ],
-        frontLayout,
-        {
-          responsive: true,
-          displaylogo: false,
-          scrollZoom: false
-        }
-      );
-
-      frontStatus.textContent =
-        `Latest observation: ${payload.as_of_date} · ` +
-        `move the cursor over the lines to inspect values.`;
     })
-    .catch(error => {
-      console.error(error);
+    .then(payload => payload.data)
+    .catch(error => { console.warn(error); return []; });
 
-      frontStatus.textContent =
-        "TAIEX / front-expiry VIX history could not be loaded.";
-    });
+  Promise.all([indexData, volumeData, plotlyReady]).then(([indexRows, volumeRows]) => {
+    const market = sumMarketCounts(volumeRows);
+    const marketDates = new Set(market.map(row => row.Date));
+    const end = indexRows.filter(row => marketDates.has(row.Date)).at(-1)?.Date;
+    // If one feed is unavailable, keep the other histories usable.
+    const lastDay = end ?? [indexRows.at(-1)?.Date, market.at(-1)?.Date].filter(Boolean).sort().at(-1);
+    if (!lastDay) throw new Error("No market history available");
+
+    function updateHistory() {
+      const length = Number(lookback.value);
+      const cutoff = new Date(lastDay + "T00:00:00Z");
+      cutoff.setUTCDate(cutoff.getUTCDate() - length + 1);
+      const start = cutoff.toISOString().slice(0, 10);
+      const range = [start, lastDay];
+      const inWindow = row => row.Date >= start && row.Date <= lastDay;
+      const front = indexRows.filter(inWindow);
+      const activity = market.filter(inWindow);
+      windowStatus.textContent = `${start} – ${lastDay} · ${length} calendar days`;
+      drawHistory("front-vix", "Front-expiry VIX", "Annualized IV (%)", range, front,
+        front.map(row => row.Front_VIX), front.map(row => row.Contract), "%{customdata}<br>VIX: %{y:.2f}%");
+      drawHistory("taiex", "TAIEX close", "Index points", range, front,
+        front.map(row => row.TAIEX_Close), undefined, "TAIEX: %{y:,.2f}");
+      for (const [measure, id, title] of [
+        ["Volume", "volume-ratio", "Put/Call ratio · Volume"], ["OI", "oi-ratio", "Put/Call ratio · Open interest"]
+      ]) {
+        const counts = activity.map(row => [row["Put_" + measure], row["Call_" + measure]]);
+        drawHistory(id, title, "Put / Call (%)", range, activity,
+          counts.map(([put, call]) => call > 0 ? 100 * put / call : null), counts,
+          "Put/Call: %{y:.2f}%<br>Put: %{customdata[0]:,.0f}<br>Call: %{customdata[1]:,.0f}", true);
+      }
+    }
+    lookback.disabled = false;
+    lookback.addEventListener("change", updateHistory);
+    updateHistory();
+  }).catch(error => {
+    console.error(error);
+    windowStatus.textContent = "Market history could not be loaded.";
+  });
 
   // ------------------------------------------------------------
   // TX / MXF IV charts
