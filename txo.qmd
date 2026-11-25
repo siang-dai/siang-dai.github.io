@@ -402,10 +402,10 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     const bodyColor =
       getComputedStyle(document.body).color;
 
-    const traces = ["Call", "Put"].map(side => ({
-      type: "bar", name: side, x: daily.map(row => row.Expiration_Month),
-      y: daily.map(row => row[side + "_Volume"]),
-      hovertemplate: `%{x}<br>${side}: %{y:,.0f} contracts<extra></extra>`
+    const traces = ivSides.map(({ name, color }) => ({
+      type: "bar", name, marker: { color }, x: daily.map(row => row.Expiration_Month),
+      y: daily.map(row => row[name + "_Volume"]),
+      hovertemplate: `%{x}<br>${name}: %{y:,.0f} contracts<extra></extra>`
     }));
 
     const layout = {
