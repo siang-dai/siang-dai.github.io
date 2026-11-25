@@ -12,7 +12,7 @@ body-classes: observatory-page txo-page
 
 ## VIX term structure and option volume {#vix-volatility-index-term-structure}
 
-The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and option volume. In Liquidity by strike, choose an expiration to compare call and put volume across 500-point strike intervals. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
+The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and option volume. In Liquidity by strike, choose an expiration to compare put and call volume in 500-point strike bins. The right axis shows the same day’s nearest TXF-based IV curve over those strikes. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
 Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the best bid by more than 50 index points **and** is more than 10 times the bid. Volume includes both sessions.
 
@@ -22,13 +22,13 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
     <label for="vix-history-date">Trading date</label>
     <div class="txo-history-navigation">
       <button id="vix-prev-date" type="button" disabled aria-label="Previous trading day" title="Previous trading day">←</button>
-      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart liquidity-chart">
+      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart liquidity-chart iv-grid">
         <option>Loading dates…</option>
       </select>
       <button id="vix-next-date" type="button" disabled aria-label="Next trading day" title="Next trading day">→</button>
     </div>
   </div>
-  <p id="vix-history-help" class="visually-hidden">Drag the slider or use the arrows to change the trading date for all three charts.</p>
+  <p id="vix-history-help" class="visually-hidden">Drag the slider or use the arrows to change the trading date for the snapshot and IV curves.</p>
 
   <div class="vix-slider-wrap">
     <input
@@ -39,9 +39,9 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       step="1"
       value="0"
       disabled
-      aria-label="Select trading date for VIX, option volume and liquidity"
+      aria-label="Select trading date for the snapshot and IV curves"
       aria-describedby="vix-history-help"
-      aria-controls="vix-term-chart vix-volume-chart liquidity-chart"
+      aria-controls="vix-term-chart vix-volume-chart liquidity-chart iv-grid"
     >
 
     <div class="vix-slider-labels">
@@ -71,7 +71,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       </label>
     </div>
     <p id="liquidity-status" role="status"></p>
-    <div id="liquidity-chart" style="height: clamp(250px, 34vh, 350px)"></div>
+    <div id="liquidity-chart" style="height: clamp(300px, 39vh, 390px)"></div>
   </div>
 </div>
 ```
@@ -115,35 +115,22 @@ Each window ends on the latest shared trading day. The [TAIFEX put/call ratios](
 
 ## IV (Implied Volatility) Curves
 
-IV is calculated by numerically inverting the Black formula for each eligible OTM option quote. The workflow uses settlement prices, requires exact option–futures expiration matching, and performs no nearest-contract substitution or IV smoothing.
-
-Move the cursor over a point to inspect its strike, IV and option price. Drag to zoom; double-click a chart or use Reset zoom to restore its view.
-
-### TAIEX Futures (TXF) IV curve
-
-Only TXF futures contracts with matching expiration dates are included. The chart updates daily, displaying up to four nearest expiration dates.
+The top row shows the two nearest eligible expirations matched to TAIEX futures (TXF). The bottom row uses Mini-TAIEX futures (MXF). Both date sliders select the same trading day. Each point is a Black-76 IV from an out-of-the-money option settlement price and a futures contract with the same expiration.
 
 ```{=html}
-<div class="project-card txo-iv-card">
-  <div class="txo-iv-toolbar">
-    <p id="tx-status" role="status">Loading the latest TX curve…</p>
-    <button id="tx-iv-reset" class="txo-iv-reset" type="button" disabled>Reset zoom</button>
+<div class="project-card txo-history-card">
+  <div class="txo-history-controls">
+    <label for="iv-date-slider">Trading date</label>
+    <button id="iv-reset" class="txo-iv-reset" type="button" disabled>Reset zoom</button>
   </div>
-  <div id="tx-chart" class="txo-iv-grid" aria-busy="true"></div>
-</div>
-```
-
-### Mini-TAIEX Futures (MXF) IV curve
-
-Only MXF futures contracts with matching expiration dates are included. The chart updates daily, displaying up to four nearest expiration dates.
-
-```{=html}
-<div class="project-card txo-iv-card">
-  <div class="txo-iv-toolbar">
-    <p id="mtx-status" role="status">Loading the latest MXF curve…</p>
-    <button id="mtx-iv-reset" class="txo-iv-reset" type="button" disabled>Reset zoom</button>
+  <div class="vix-slider-wrap">
+    <input id="iv-date-slider" class="w-100" type="range" min="0" max="0" step="1" value="0" disabled
+      aria-controls="vix-term-chart vix-volume-chart liquidity-chart iv-grid">
+    <div class="vix-slider-labels">
+      <span id="iv-start-date"></span><strong id="iv-selected-date"></strong><span id="iv-end-date"></span>
+    </div>
   </div>
-  <div id="mtx-chart" class="txo-iv-grid" aria-busy="true"></div>
+  <div id="iv-grid" class="txo-iv-grid" aria-busy="true"></div>
 </div>
 ```
 
@@ -203,6 +190,11 @@ Only MXF futures contracts with matching expiration dates are included. The char
   const expirySelect = document.getElementById("liquidity-expiration");
   const liquidityChart = document.getElementById("liquidity-chart");
   const liquidityStatus = document.getElementById("liquidity-status");
+  const ivSlider = document.getElementById("iv-date-slider");
+  const ivSides = [
+    { key: "puts", name: "Put", color: "#d78328", tint: "#e4ab6d", symbol: "circle" },
+    { key: "calls", name: "Call", color: "#297fb8", tint: "#6da8cf", symbol: "square" }
+  ];
 
   function parseCsv(text) {
     const lines = text.trim().split(/\r?\n/);
@@ -454,14 +446,13 @@ Only MXF futures contracts with matching expiration dates are included. The char
       `${totalVolume.toLocaleString()} contracts`;
   }
 
-  function renderLiquidity(row, date) {
+  function renderLiquidity(row, date, curve, loading) {
     const first = row?.First_Strike_Bin;
-    const sides = ["Call", "Put"];
-    const counts = sides.map(side => row?.[side + "_Bins_500"]?.split(/\s+/).map(Number) ?? []);
+    const counts = ivSides.map(side => row?.[side.name + "_Bins_500"]?.split(/\s+/).map(Number) ?? []);
     const complete = Number.isSafeInteger(first) && first >= 0 && first % 500 === 0 &&
       counts[0].length > 0 && counts[0].length === counts[1].length &&
       counts.every((values, i) => values.every(n => Number.isSafeInteger(n) && n >= 0) &&
-        values.reduce((sum, n) => sum + n, 0) === row[sides[i] + "_Volume"]);
+        values.reduce((sum, n) => sum + n, 0) === row[ivSides[i].name + "_Volume"]);
     if (!complete) {
       liquidityStatus.textContent = `No strike-volume data available for ${date}.`;
       liquidityChart.hidden = true;
@@ -470,18 +461,37 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
     liquidityChart.hidden = false;
     const strikes = counts[0].map((_, i) => first + i * 500);
+    const end = first + strikes.length * 500;
     const intervals = strikes.map(start => `[${start.toLocaleString("en-US")}, ${(start + 500).toLocaleString("en-US")})`);
-    const traces = sides.map((side, i) => ({
-      type: "bar", name: side, x: strikes, y: counts[i], customdata: intervals,
-      hovertemplate: `Strike: %{customdata}<br>${side}: %{y:,.0f} contracts<extra></extra>`
+    const lines = [];
+    for (const side of ivSides) {
+      const points = curve?.[side.key].filter(([strike]) => strike >= first && strike < end);
+      if (!points?.length) continue;
+      lines.push({
+        type: "scatter", mode: "lines+markers", name: `OTM ${side.name.toLowerCase()} IV`,
+        x: points.map(p => p[0]), y: points.map(p => p[1]), legendrank: 3 + lines.length,
+        line: { color: side.tint, width: 2 }, marker: { color: side.tint, size: 3 },
+        hovertemplate: `TXF ${curve.futures_contract} · %{x:,.0f}<br>${side.name} IV: %{y:.2f}%<extra></extra>`
+      });
+    }
+    // Plotly paints the overlay axis after the base axis. Keep volumes in front of IV.
+    const bars = ivSides.map((side, i) => ({
+      type: "bar", name: side.name + " volume", marker: { color: side.color }, legendrank: i,
+      x: strikes.map(start => start + (i === 0 ? 149 : 351)), width: 185, y: counts[i],
+      customdata: intervals, yaxis: lines.length ? "y2" : "y",
+      hovertemplate: `Strike: %{customdata}<br>${side.name}: %{y:,.0f} contracts<extra></extra>`
     }));
-    liquidityStatus.textContent = `${date} · Call ${row.Call_Volume.toLocaleString("en-US")} · Put ${row.Put_Volume.toLocaleString("en-US")}`;
-    ObservatoryCharts.react(liquidityChart, traces, {
-      barmode: "group", hovermode: "closest",
-      xaxis: { type: "linear", title: "Strike (500-point bins, lower bound)", tickformat: ",d" },
-      yaxis: { title: "Traded volume (contracts)", rangemode: "tozero", tickformat: ",d" },
-      legend: { orientation: "h", x: 1, xanchor: "right", y: 1, yanchor: "top", bgcolor: "rgba(0,0,0,0)" },
-      margin: { b: 44 }
+    const ivLabel = curve ? `IV: TXF ${curve.futures_contract} (expires ${curve.expiry})` +
+      (lines.length ? "" : " · No IV strikes in range") : (loading ? "Loading IV…" : "No TXF IV available");
+    liquidityStatus.textContent = `${date} · Put ${row.Put_Volume.toLocaleString("en-US")} · Call ${row.Call_Volume.toLocaleString("en-US")} · ${ivLabel}`;
+    const volumeAxis = { title: "Traded volume (contracts)", side: "left", rangemode: "tozero", tickformat: ",d" };
+    ObservatoryCharts.react(liquidityChart, [...lines, ...bars], {
+      barmode: "overlay", hovermode: "closest",
+      xaxis: { type: "linear", title: "Strike price (500-point volume bins)", range: [first, end], tickformat: ",d" },
+      yaxis: lines.length ? { title: "Implied volatility (%)", side: "right", ticksuffix: "%", showgrid: false } : volumeAxis,
+      ...(lines.length ? { yaxis2: { ...volumeAxis, overlaying: "y" } } : {}),
+      legend: { orientation: "h", x: 0, yref: "container", y: 0, xanchor: "left", yanchor: "bottom" },
+      margin: { b: 104 }
     }, { responsive: true, displaylogo: false, scrollZoom: false });
   }
 
@@ -514,21 +524,22 @@ Only MXF futures contracts with matching expiration dates are included. The char
         }
 
         return response.text();
-      }),
+      }).catch(error => { console.warn(error); return ""; }),
 
     volumeData,
-    plotlyReady
+    plotlyReady,
+    latestIvData()
   ])
     .then(([
       vixText,
-      volumeRows
+      volumeRows, , latestIv
     ]) => {
       const rows =
         parseCsv(vixText);
 
       const allDates = [
         ...new Set(
-          [...rows, ...volumeRows].map(row => row.Date)
+          [...rows.map(row => row.Date), ...volumeRows.map(row => row.Date), latestIv?.as_of_date].filter(Boolean)
         )
       ].sort();
 
@@ -541,6 +552,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
       slider.step = "1";
       slider.value = String(allDates.length - 1);
       slider.disabled = false;
+      ivSlider.max = slider.max;
+      ivSlider.disabled = false;
 
       dateSelect.replaceChildren(...allDates.map(date => {
         const option = document.createElement("option");
@@ -555,10 +568,15 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
       endLabel.textContent =
         allDates[allDates.length - 1];
+      document.getElementById("iv-start-date").textContent = startLabel.textContent;
+      document.getElementById("iv-end-date").textContent = endLabel.textContent;
 
       let daily = [];
+      let selectedIv = null;
+      let ivLoading = false;
       function updateLiquidity() {
-        renderLiquidity(daily.find(row => row.Expiration_Month === expirySelect.value), dateSelect.value);
+        renderLiquidity(daily.find(row => row.Expiration_Month === expirySelect.value),
+          dateSelect.value, selectedIv?.TX?.[0], ivLoading);
       }
       expirySelect.addEventListener("change", updateLiquidity);
 
@@ -569,6 +587,9 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
         selectedLabel.textContent = selectedDate;
         slider.setAttribute("aria-valuetext", selectedDate);
+        ivSlider.value = slider.value;
+        ivSlider.setAttribute("aria-valuetext", selectedDate);
+        document.getElementById("iv-selected-date").textContent = selectedDate;
         dateSelect.value = selectedDate;
         previousDate.disabled = index === 0;
         nextDate.disabled = index === allDates.length - 1;
@@ -588,13 +609,35 @@ Only MXF futures contracts with matching expiration dates are included. The char
         expirySelect.replaceChildren(...(options.length ? options : [new Option("No expirations", "")]));
         expirySelect.disabled = options.length === 0;
         if (options.some(option => option.value === previousExpiry)) expirySelect.value = previousExpiry;
-        updateLiquidity();
+        function showIv(curves, loading) {
+          if (selectedDate !== dateSelect.value) return;
+          selectedIv = curves;
+          ivLoading = loading;
+          updateLiquidity();
+          renderIvPanels(curves, selectedDate, loading);
+        }
+        if (latestIv?.as_of_date === selectedDate) {
+          showIv(Object.fromEntries(["TX", "MTX"].map(product => [product,
+            latestIv.products[product].curves.filter(c => c.puts.length || c.calls.length).slice(0, 2)])), false);
+        } else {
+          const month = selectedDate.slice(0, 7);
+          if (ivMonths.has(month)) {
+            showIv(ivMonths.get(month)[selectedDate], false);
+          } else {
+            showIv(null, true);
+            loadIvMonth(month).then(days => showIv(days?.[selectedDate], false));
+          }
+        }
       }
 
       slider.addEventListener(
         "input",
         updateFromSlider
       );
+      ivSlider.addEventListener("input", () => {
+        slider.value = ivSlider.value;
+        updateFromSlider();
+      });
 
       dateSelect.addEventListener("change", () => {
         const index = allDates.indexOf(dateSelect.value);
@@ -642,6 +685,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
       dateSelect.disabled = true;
       previousDate.disabled = true;
       nextDate.disabled = true;
+      ivSlider.disabled = true;
+      renderIvPanels(null, "", false);
     });
 
   // ------------------------------------------------------------
@@ -752,101 +797,95 @@ Only MXF futures contracts with matching expiration dates are included. The char
   // TX / MXF IV charts
   // ------------------------------------------------------------
 
-  const ivPlots = [];
+  async function latestIvData() {
+    try {
+      const response = await fetch(`${rawOutput}/latest_iv.json`, { cache: "no-cache" });
+      if (!response.ok) throw new Error("Latest IV unavailable");
+      const data = await response.json();
+      if (data.schema !== 1 || JSON.stringify(data.point_columns) !== '["strike","iv_pct","option_price"]'
+          || !["TX", "MTX"].every(p => Array.isArray(data.products?.[p]?.curves))) return null;
+      return data;
+    } catch (error) {
+      console.warn(error);
+      return null;
+    }
+  }
 
-  async function renderIvProduct(payload, product, prefix) {
-    const container = document.getElementById(`${prefix}-chart`);
-    const chartStatus = document.getElementById(`${prefix}-status`);
-    const reset = document.getElementById(`${prefix}-iv-reset`);
-    const data = payload.products[product];
-    if (!data || !Array.isArray(data.curves)) throw new Error("IV curve data unavailable");
-    container.replaceChildren();
-    const plots = [];
-    for (const curve of data.curves) {
+  const ivMonths = new Map();
+  const pendingMonths = new Map();
+  function loadIvMonth(month) {
+    if (!pendingMonths.has(month)) {
+      const request = fetch(`${rawData}/iv_history/${month}.json`, { cache: "no-cache" })
+        .then(response => {
+          if (!response.ok) throw new Error(`IV history unavailable for ${month}`);
+          return response.json();
+        })
+        .then(days => { ivMonths.set(month, days); return days; })
+        .catch(error => { console.warn(error); return null; })
+        .finally(() => pendingMonths.delete(month));
+      pendingMonths.set(month, request);
+    }
+    return pendingMonths.get(month);
+  }
+
+  const ivGrid = document.getElementById("iv-grid");
+  const ivReset = document.getElementById("iv-reset");
+  const ivPanels = [];
+  for (const [product, label] of [["TX", "TXF"], ["MTX", "MXF"]]) {
+    for (let rank = 0; rank < 2; rank++) {
       const panel = document.createElement("section");
       panel.className = "txo-iv-panel";
       const title = document.createElement("h4");
-      title.textContent = `TXO ${curve.option_contract} → ${product} ${curve.futures_contract}`;
       const details = document.createElement("p");
       details.className = "txo-iv-details";
-      details.textContent = `Expiry ${curve.expiry} · DTE ${curve.days_to_expiry} · ` +
-        `${curve.puts.length + curve.calls.length} points · F = ${curve.forward.toLocaleString(undefined, {maximumFractionDigits: 2})}`;
-      panel.append(title, details);
-      container.append(panel);
-      if (!curve.puts.length && !curve.calls.length) {
-        const empty = document.createElement("p");
-        empty.textContent = "No eligible OTM quotes for this expiration.";
-        panel.append(empty);
-        continue;
-      }
       const plot = document.createElement("div");
       plot.className = "txo-iv-plot";
       plot.setAttribute("role", "img");
-      plot.setAttribute("aria-label", `OTM implied volatility by strike for TXO ${curve.option_contract}, using ${product} ${curve.futures_contract}`);
-      panel.append(plot);
-      const traces = [["puts", "OTM Put", "#297fb8", "circle"], ["calls", "OTM Call", "#d78328", "square"]]
-        .filter(([key]) => curve[key].length)
-        .map(([key, name, color, symbol]) => ({
-          type: "scatter", mode: "markers", name,
-          x: curve[key].map(point => point[0]), y: curve[key].map(point => point[1]),
-          customdata: curve[key].map(point => point[2]),
-          marker: { color, symbol, size: 5, opacity: .85 },
-          hovertemplate: `TXO ${curve.option_contract} · ${payload.as_of_date}` +
-            "<br>Strike: %{x:,.0f}<br>IV: %{y:.2f}%" +
-            "<br>Option price: %{customdata:,.2f} points<extra>%{fullData.name}</extra>"
-        }));
-      await ObservatoryCharts.newPlot(plot, traces, {
-        margin: { l: 58, r: 12, t: 12, b: 85 },
-        xaxis: { title: {text: "Strike price"}, tickformat: ",.0f", nticks: 4,
-          gridcolor: "rgba(127,127,127,.18)", automargin: true },
-        yaxis: { title: {text: "Implied volatility (%)"}, gridcolor: "rgba(127,127,127,.18)", automargin: true },
-        shapes: [{ type: "line", xref: "x", yref: "paper", x0: curve.forward, x1: curve.forward,
-          y0: 0, y1: 1, line: { color: "#888", width: 1.5, dash: "dash" } }],
-        paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)",
-        font: { color: getComputedStyle(document.body).color, size: 11 },
-        legend: { orientation: "h", x: 0, y: -.3 },
-        hovermode: "closest", dragmode: "zoom", autosize: true
-      }, { responsive: true, displayModeBar: false, scrollZoom: false });
-      plots.push(plot);
-      ivPlots.push(plot);
+      panel.append(title, details, plot);
+      ivGrid.append(panel);
+      ivPanels.push({ product, label, rank, title, details, plot });
     }
-    if (!data.curves.length) {
-      container.textContent = `No option expiration has an exact same-expiry ${product} futures match.`;
-    }
-    reset.disabled = !plots.length;
-    reset.addEventListener("click", () => {
-      plots.forEach(plot => Plotly.relayout(plot, {"xaxis.autorange": true, "yaxis.autorange": true}));
-    });
-    chartStatus.textContent = `Latest trading date: ${payload.as_of_date} · ` +
-      `${data.plotted_points} OTM IV points · Generated in Taiwan: ${payload.generated_at_taipei}`;
-    container.setAttribute("aria-busy", "false");
   }
 
-  Promise.all([
-    fetch(`${rawOutput}/latest_iv.json`, {cache: "no-cache"}).then(response => {
-      if (!response.ok) throw new Error("IV data unavailable");
-      return response.json();
-    }),
-    plotlyReady
-  ]).then(async ([payload]) => {
-    if (payload.schema !== 1 || JSON.stringify(payload.point_columns) !== JSON.stringify(["strike", "iv_pct", "option_price"])) {
-      throw new Error("Unsupported IV chart data");
+  function renderIvPanels(day, date, loading) {
+    ivGrid.setAttribute("aria-busy", String(loading));
+    ivReset.disabled = true;
+    for (const { product, label, rank, title, details, plot } of ivPanels) {
+      const curve = day?.[product]?.[rank];
+      const rankName = rank === 0 ? "Nearest expiry" : "Second expiry";
+      title.textContent = `${label} · ${rankName}` + (curve ? ` · ${curve.option_contract}` : "");
+      plot.style.visibility = curve ? "visible" : "hidden";
+      if (!curve) {
+        details.textContent = loading ? "Loading IV history…" : "No eligible curve available.";
+        continue;
+      }
+      details.textContent = `Expires ${curve.expiry} · ${curve.days_to_expiry} days · Futures ${curve.forward.toLocaleString("en-US")}`;
+      plot.setAttribute("aria-label", `${date}, ${label} ${curve.futures_contract} implied volatility by strike`);
+      const traces = ivSides.filter(side => curve[side.key].length).map(side => ({
+        type: "scatter", mode: "markers", name: `OTM ${side.name.toLowerCase()}`,
+        x: curve[side.key].map(p => p[0]), y: curve[side.key].map(p => p[1]),
+        customdata: curve[side.key].map(p => p[2]),
+        marker: { color: side.color, symbol: side.symbol, size: 5, opacity: .85 },
+        hovertemplate: `${date} · ${label} ${curve.futures_contract}` +
+          "<br>Strike: %{x:,.0f}<br>IV: %{y:.2f}%<br>Option price: %{customdata:,.2f}<extra>%{fullData.name}</extra>"
+      }));
+      ObservatoryCharts.react(plot, traces, {
+        margin: { b: 70 }, xaxis: { title: "Strike price", tickformat: ",.0f", nticks: 5 },
+        yaxis: { title: "Implied volatility (%)" },
+        shapes: [{ type: "line", xref: "x", yref: "paper", x0: curve.forward, x1: curve.forward,
+          y0: 0, y1: 1, line: { color: "#888", width: 1.5, dash: "dash" } }],
+        legend: { orientation: "h", x: 0, y: -.27 }, hovermode: "closest", dragmode: "zoom"
+      }, { responsive: true, displayModeBar: false, displaylogo: false });
+      ivReset.disabled = false;
     }
-    const results = await Promise.allSettled([renderIvProduct(payload, "TX", "tx"), renderIvProduct(payload, "MTX", "mtx")]);
-    const failed = results.find(result => result.status === "rejected");
-    if (failed) throw failed.reason;
-  }).catch(error => {
-    console.error("IV chart error:", error);
-    ivPlots.forEach(plot => Plotly.purge(plot));
-    for (const prefix of ["tx", "mtx"]) {
-      const container = document.getElementById(`${prefix}-chart`);
-      container.replaceChildren();
-      container.setAttribute("aria-busy", "false");
-      document.getElementById(`${prefix}-iv-reset`).disabled = true;
-      document.getElementById(`${prefix}-status`).textContent = "IV chart data could not be loaded. Please try again later.";
+  }
+  ivReset.addEventListener("click", () => {
+    for (const { plot } of ivPanels) {
+      if (plot.data && plot.style.visibility === "visible") {
+        Plotly.relayout(plot, { "xaxis.autorange": true, "yaxis.autorange": true });
+      }
     }
   });
-
 
 })();
 </script>
