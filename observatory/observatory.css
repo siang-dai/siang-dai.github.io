@@ -4,6 +4,7 @@ body.observatory-page {
   --observatory-accent: #284b63;
 }
 .observatory-page main.content { max-width: 1120px; padding-top: 1.2rem; }
+.txo-page main.content { width: 100%; max-width: 1360px; margin-inline: auto; }
 .observatory-page main h2 { font-size: 1.45rem; border: 0; padding-bottom: 0; margin: 2.4rem 0 .85rem; }
 .observatory-page main > section:first-of-type > h2 { margin-top: .5rem; font-size: 1.6rem; }
 .observatory-page main h3 { font-size: 1.15rem; margin: 2rem 0 .6rem; }
@@ -46,7 +47,7 @@ body.observatory-page {
   overflow-wrap: anywhere;
 }
 .observatory-page #spx-vix-term-chart { height: 400px; min-height: 0; }
-.observatory-page :is(#vix-term-chart, #vix-volume-chart) {
+.observatory-page :is(#vix-term-chart, #vix-volume-chart, #volume-ratio-chart, #oi-ratio-chart) {
   width: 100%; min-height: 0; height: clamp(190px, calc(50vh - 156px), 265px);
 }
 .observatory-page #front-vix-taiex-chart { width: 100%; height: 540px; }
@@ -89,17 +90,23 @@ body.observatory-page {
 .observatory-page .txo-history-card #vix-date-slider { display: block; }
 .observatory-page .txo-history-card .vix-slider-labels { margin: 0; }
 .observatory-page .txo-history-grid {
-  display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; margin-top: .55rem;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "vix volume-ratio" "volume oi-ratio";
+  gap: .6rem 1.25rem; margin-top: .55rem;
 }
+.txo-history-grid .panel-vix { grid-area: vix; }
+.txo-history-grid .panel-volume { grid-area: volume; }
+.txo-history-grid .panel-volume-ratio { grid-area: volume-ratio; }
+.txo-history-grid .panel-oi-ratio { grid-area: oi-ratio; }
 .observatory-page .txo-history-panel {
   min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "title stats" "plot plot"; align-items: baseline; column-gap: .6rem;
 }
-.observatory-page .txo-history-panel :is(#vix-term-chart, #vix-volume-chart) { grid-area: plot; }
-.observatory-page .txo-history-panel + .txo-history-panel {
+.observatory-page .txo-history-panel :is(#vix-term-chart, #vix-volume-chart, #volume-ratio-chart, #oi-ratio-chart) { grid-area: plot; }
+.observatory-page .txo-history-panel:is(.panel-volume, .panel-oi-ratio) {
   border-top: 1px solid var(--observatory-line); padding-top: .5rem;
 }
-.observatory-page .txo-history-card :is(#vix-status, #vix-volume-status) {
+.observatory-page .txo-history-card :is(#vix-status, #vix-volume-status, #volume-ratio-status, #oi-ratio-status) {
   grid-area: stats; margin: 0; border: 0; padding: 0; font-size: .8rem;
 }
 .observatory-page .txo-history-card .observatory-chart-title { grid-area: title; margin: 0; }
@@ -126,10 +133,17 @@ body.observatory-page {
 .observatory-page #related h2, .observatory-page #related-websites h2 { font-size: 1.1rem; margin-top: 1.25rem; }
 @media (max-width: 767px) {
   .observatory-page .txo-history-card { padding: .75rem; }
+  .observatory-page .txo-history-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "vix" "volume" "volume-ratio" "oi-ratio";
+  }
+  .observatory-page .txo-history-panel + .txo-history-panel {
+    border-top: 1px solid var(--observatory-line); padding-top: .5rem;
+  }
   .observatory-page .txo-history-panel {
     grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "stats" "plot";
   }
-  .observatory-page :is(#vix-term-chart, #vix-volume-chart) {
+  .observatory-page :is(#vix-term-chart, #vix-volume-chart, #volume-ratio-chart, #oi-ratio-chart) {
     height: clamp(195px, calc(50svh - 176px), 240px);
   }
   .observatory-page .txo-history-navigation { width: 204px; }
