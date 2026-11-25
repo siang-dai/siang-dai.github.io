@@ -3,10 +3,12 @@ title: ""
 page-layout: full
 toc: false
 body-classes: observatory-page txo-page
+resources:
+  - observatory/observatory.css
 ---
 
 ```{=html}
-<link rel="stylesheet" href="observatory/observatory.css">
+<link rel="stylesheet" href="observatory/observatory.css?v=snapshot-metrics">
 <script src="observatory/presentation.js"></script>
 ```
 
@@ -22,7 +24,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
     <label for="vix-history-date">Trading date</label>
     <div class="txo-history-navigation">
       <button id="vix-prev-date" type="button" disabled aria-label="Previous trading day" title="Previous trading day">←</button>
-      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart liquidity-chart iv-grid">
+      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart snapshot-metrics liquidity-chart iv-grid">
         <option>Loading dates…</option>
       </select>
       <button id="vix-next-date" type="button" disabled aria-label="Next trading day" title="Next trading day">→</button>
@@ -41,7 +43,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       disabled
       aria-label="Select trading date for the snapshot and IV curves"
       aria-describedby="vix-history-help"
-      aria-controls="vix-term-chart vix-volume-chart liquidity-chart iv-grid"
+      aria-controls="vix-term-chart vix-volume-chart snapshot-metrics liquidity-chart iv-grid"
     >
 
     <div class="vix-slider-labels">
@@ -51,7 +53,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
     </div>
   </div>
 
-  <div class="txo-history-grid">
+  <div class="txo-history-grid txo-snapshot-grid" id="daily-snapshot">
     <div class="txo-history-panel panel-vix">
       <p id="vix-status">Loading VIX term-structure history…</p>
       <div id="vix-term-chart"></div>
@@ -60,6 +62,12 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       <p id="vix-volume-status">Loading TXO option volume…</p>
       <div id="vix-volume-chart"></div>
     </div>
+    <dl id="snapshot-metrics" aria-label="Selected trading day">
+      <div><dt title="TAIEX close minus the previous trading day's close">TAIEX Δ (pts)</dt><dd id="snapshot-change">—</dd></div>
+      <div><dt title="Estimated VIX of the nearest expiration in the term structure">Front-expiry IV</dt><dd id="snapshot-iv">—</dd></div>
+      <div><dt title="Put / Call traded volume, all expirations">P/C · Volume</dt><dd id="snapshot-volume">—</dd></div>
+      <div><dt title="Put / Call closing open interest, all expirations">P/C · OI</dt><dd id="snapshot-oi">—</dd></div>
+    </dl>
   </div>
   <div class="txo-liquidity mt-2" id="liquidity">
     <div class="txo-history-controls">
@@ -125,7 +133,7 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
   </div>
   <div class="vix-slider-wrap">
     <input id="iv-date-slider" class="w-100" type="range" min="0" max="0" step="1" value="0" disabled
-      aria-controls="vix-term-chart vix-volume-chart liquidity-chart iv-grid">
+      aria-controls="vix-term-chart vix-volume-chart snapshot-metrics liquidity-chart iv-grid">
     <div class="vix-slider-labels">
       <span id="iv-start-date"></span><strong id="iv-selected-date"></strong><span id="iv-end-date"></span>
     </div>
@@ -216,14 +224,14 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
           Date: String(row.Date || "").trim(),
           Expiration_Month: String(row.Expiration_Month || "").trim(),
           Expiration_Date: String(row.Expiration_Date || "").trim(),
-          Days_to_Exp: Number(row.Days_to_Exp),
+          Days_to_Exp: row.Days_to_Exp?.trim() ? Number(row.Days_to_Exp) : NaN,
           Forward: Number(row.Forward),
-          VIX: Number(row.VIX)
+          VIX: row.VIX?.trim() ? Number(row.VIX) : NaN
         };
       })
       .filter(row =>
         row.Date &&
-        Number.isFinite(row.Days_to_Exp) &&
+        Number.isFinite(row.Days_to_Exp) && row.Days_to_Exp >= 0 &&
         Number.isFinite(row.VIX)
       );
   }
@@ -281,11 +289,7 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     }, { responsive: true, displayModeBar: false, displaylogo: false });
   }
 
-  function renderTermStructure(rows, date) {
-    const daily = rows
-      .filter(row => row.Date === date)
-      .sort((a, b) => a.Days_to_Exp - b.Days_to_Exp);
-
+  function renderTermStructure(daily, date) {
     if (!daily.length) {
       renderEmptyHistoryChart(chart, `TXO VIX Term Structure — ${date}`,
         "No VIX data recorded for this date.");
@@ -502,7 +506,27 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
       for (const side of ["Call_Volume", "Put_Volume", "Call_OI", "Put_OI"]) totals[side] += row[side];
       daily.set(row.Date, totals);
     }
-    return [...daily.values()].sort((a, b) => a.Date.localeCompare(b.Date));
+    return daily;
+  }
+
+  function putCallPercent(put, call) {
+    return Number.isFinite(put) && call > 0 ? 100 * put / call : null;
+  }
+
+  const signedPoints = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "exceptZero"
+  });
+  function renderSnapshot(date, change, front, counts) {
+    document.getElementById("snapshot-metrics").setAttribute("aria-label", `Market snapshot for ${date}`);
+    const points = document.getElementById("snapshot-change");
+    points.textContent = Number.isFinite(change) ? signedPoints.format(change) : "—";
+    points.dataset.direction = change > 0 ? "up" : change < 0 ? "down" : "";
+    const percent = value => Number.isFinite(value) ? `${value.toFixed(2)}%` : "—";
+    const iv = document.getElementById("snapshot-iv");
+    iv.textContent = percent(front?.VIX);
+    iv.title = front ? `${front.Expiration_Month} · ${front.Expiration_Date}` : "";
+    document.getElementById("snapshot-volume").textContent = percent(putCallPercent(counts?.Put_Volume, counts?.Call_Volume));
+    document.getElementById("snapshot-oi").textContent = percent(putCallPercent(counts?.Put_OI, counts?.Call_OI));
   }
 
   // Fetch volume once for both the snapshot and market history.
@@ -513,6 +537,13 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     })
     .then(parseVolumeCsv)
     .catch(error => { console.warn(error); return []; });
+  const marketByDate = volumeData.then(sumMarketCounts);
+  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json?fields=ohlc-change`, { cache: "no-cache" })
+    .then(response => {
+      if (!response.ok) throw new Error("TAIEX history unavailable");
+      return response.json();
+    })
+    .catch(error => { console.warn(error); return { data: [] }; });
 
   Promise.all([
     fetch(
@@ -528,11 +559,11 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
 
     volumeData,
     plotlyReady,
-    latestIvData()
+    latestIvData(), marketByDate, indexData
   ])
     .then(([
       vixText,
-      volumeRows, , latestIv
+      volumeRows, , latestIv, countsByDate, indexHistory
     ]) => {
       const rows =
         parseCsv(vixText);
@@ -594,10 +625,10 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
         previousDate.disabled = index === 0;
         nextDate.disabled = index === allDates.length - 1;
 
-        renderTermStructure(
-          rows,
-          selectedDate
-        );
+        const term = rows.filter(row => row.Date === selectedDate)
+          .sort((a, b) => a.Days_to_Exp - b.Days_to_Exp || a.Expiration_Date.localeCompare(b.Expiration_Date));
+        renderTermStructure(term, selectedDate);
+        renderSnapshot(selectedDate, indexHistory.taiex_change_points?.[selectedDate], term[0], countsByDate.get(selectedDate));
 
         daily = volumeRows.filter(row => row.Date === selectedDate)
           .sort((a, b) => a.Expiration_Date.localeCompare(b.Expiration_Date)
@@ -728,18 +759,9 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     }, { responsive: true, displaylogo: false });
   }
 
-  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json?fields=ohlc`, { cache: "no-cache" })
-    .then(response => {
-      if (!response.ok) throw new Error("TAIEX history unavailable");
-      return response.json();
-    })
-    .then(payload => payload.data)
-    .catch(error => { console.warn(error); return []; });
-
-  Promise.all([indexData, volumeData, plotlyReady]).then(([indexRows, volumeRows]) => {
-    const market = sumMarketCounts(volumeRows);
-    const marketDates = new Set(market.map(row => row.Date));
-    const end = indexRows.filter(row => marketDates.has(row.Date)).at(-1)?.Date;
+  Promise.all([indexData, marketByDate, plotlyReady]).then(([{ data: indexRows }, countsByDate]) => {
+    const market = [...countsByDate.values()].sort((a, b) => a.Date.localeCompare(b.Date));
+    const end = indexRows.filter(row => countsByDate.has(row.Date)).at(-1)?.Date;
     // If one feed is unavailable, keep the other histories usable.
     const lastDay = end ?? [indexRows.at(-1)?.Date, market.at(-1)?.Date].filter(Boolean).sort().at(-1);
     if (!lastDay) throw new Error("No market history available");
@@ -772,7 +794,7 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
         ["OI", "oi-ratio", "Put/Call ratio · Open interest"]
       ].map(([measure, id, title]) => {
         const counts = activity.map(row => [row["Put_" + measure], row["Call_" + measure]]);
-        const values = counts.map(([put, call]) => call > 0 ? 100 * put / call : null);
+        const values = counts.map(([put, call]) => putCallPercent(put, call));
         return { id, title, trace: historyLine(activity, values, counts,
           "Put/Call: %{y:.2f}%<br>Put: %{customdata[0]:,.0f}<br>Call: %{customdata[1]:,.0f}") };
       });
