@@ -8,13 +8,13 @@ resources:
 ---
 
 ```{=html}
-<link rel="stylesheet" href="observatory/observatory.css?v=snapshot-metrics">
+<link rel="stylesheet" href="observatory/observatory.css?v=compact-iv">
 <script src="observatory/presentation.js"></script>
 ```
 
 ## VIX term structure and option volume {#vix-volatility-index-term-structure}
 
-The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and option volume. In Liquidity by strike, choose an expiration to compare put and call volume in 500-point strike bins. The right axis shows the same day’s nearest TXF-based IV curve over those strikes. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
+The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and option volume. Liquidity by strike groups the selected expiration’s trades into 500-point bins. Within its traded strike range, the right axis shows the nearest TXF-based IV curve for that day. Each IV point represents a put or call that traded at that strike in the curve’s own expiration. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
 Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the best bid by more than 50 index points **and** is more than 10 times the bid. Volume includes both sessions.
 
@@ -63,7 +63,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       <div id="vix-volume-chart"></div>
     </div>
     <dl id="snapshot-metrics" aria-label="Selected trading day">
-      <div><dt title="TAIEX close minus the previous trading day's close">TAIEX Δ (pts)</dt><dd id="snapshot-change">—</dd></div>
+      <div><dt title="Point and percentage change from the previous trading day's close">TAIEX Δ</dt><dd id="snapshot-change"><span id="snapshot-points">—</span> <span id="snapshot-pct"></span></dd></div>
       <div><dt title="Estimated VIX of the nearest expiration in the term structure">Front-expiry IV</dt><dd id="snapshot-iv">—</dd></div>
       <div><dt title="Put / Call traded volume, all expirations">P/C · Volume</dt><dd id="snapshot-volume">—</dd></div>
       <div><dt title="Put / Call closing open interest, all expirations">P/C · OI</dt><dd id="snapshot-oi">—</dd></div>
@@ -128,17 +128,25 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
 ```{=html}
 <div class="project-card txo-history-card">
   <div class="txo-history-controls">
-    <label for="iv-date-slider">Trading date</label>
-    <button id="iv-reset" class="txo-iv-reset" type="button" disabled>Reset zoom</button>
+    <label for="iv-history-date">Trading date</label>
+    <div class="txo-history-navigation">
+      <button id="iv-prev-date" type="button" disabled aria-label="Previous trading day" title="Previous trading day">←</button>
+      <select id="iv-history-date" disabled aria-controls="vix-term-chart vix-volume-chart snapshot-metrics liquidity-chart iv-grid">
+        <option>Loading dates…</option>
+      </select>
+      <button id="iv-next-date" type="button" disabled aria-label="Next trading day" title="Next trading day">→</button>
+    </div>
   </div>
   <div class="vix-slider-wrap">
     <input id="iv-date-slider" class="w-100" type="range" min="0" max="0" step="1" value="0" disabled
+      aria-label="Select trading date for the snapshot and IV curves" aria-describedby="vix-history-help"
       aria-controls="vix-term-chart vix-volume-chart snapshot-metrics liquidity-chart iv-grid">
     <div class="vix-slider-labels">
       <span id="iv-start-date"></span><strong id="iv-selected-date"></strong><span id="iv-end-date"></span>
     </div>
   </div>
   <div id="iv-grid" class="txo-iv-grid" aria-busy="true"></div>
+  <button id="iv-reset" class="txo-iv-reset" type="button" disabled>Reset zoom</button>
 </div>
 ```
 
@@ -177,8 +185,11 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     document.getElementById("vix-date-slider");
 
   const dateSelect = document.getElementById("vix-history-date");
-  const previousDate = document.getElementById("vix-prev-date");
-  const nextDate = document.getElementById("vix-next-date");
+  const dateControls = ["vix", "iv"].map(id => ({
+    select: document.getElementById(id + "-history-date"),
+    prev: document.getElementById(id + "-prev-date"),
+    next: document.getElementById(id + "-next-date")
+  }));
 
   const startLabel =
     document.getElementById("vix-start-date");
@@ -263,6 +274,11 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
           First_Strike_Bin: row.First_Strike_Bin?.trim() ? Number(row.First_Strike_Bin) : NaN,
           Call_Bins_500: row.Call_Bins_500?.trim(),
           Put_Bins_500: row.Put_Bins_500?.trim(),
+          traded: Object.fromEntries(ivSides.map(side => {
+            const field = row[side.name + "_Traded_Strikes"]?.trim();
+            const strikes = field && field !== "-" ? field.split(/\s+/).map(Number) : [];
+            return [side.key, new Set(strikes)];
+          })),
           ...Object.fromEntries(["Call_Volume", "Put_Volume", "Call_OI", "Put_OI"].map(key =>
             [key, row[key]?.trim() ? Number(row[key]) : NaN]
           ))
@@ -450,26 +466,37 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
       `${totalVolume.toLocaleString()} contracts`;
   }
 
-  function renderLiquidity(row, date, curve, loading) {
-    const first = row?.First_Strike_Bin;
+  function renderLiquidity(row, date, curve, curveVolume, loading) {
+    const binOrigin = row?.First_Strike_Bin;
     const counts = ivSides.map(side => row?.[side.name + "_Bins_500"]?.split(/\s+/).map(Number) ?? []);
-    const complete = Number.isSafeInteger(first) && first >= 0 && first % 500 === 0 &&
+    const complete = Number.isSafeInteger(binOrigin) && binOrigin >= 0 && binOrigin % 500 === 0 &&
       counts[0].length > 0 && counts[0].length === counts[1].length &&
       counts.every((values, i) => values.every(n => Number.isSafeInteger(n) && n >= 0) &&
-        values.reduce((sum, n) => sum + n, 0) === row[ivSides[i].name + "_Volume"]);
+        values.reduce((sum, n) => sum + n, 0) === row[ivSides[i].name + "_Volume"] &&
+        (row.traded[ivSides[i].key].size > 0) === (row[ivSides[i].name + "_Volume"] > 0));
     if (!complete) {
       liquidityStatus.textContent = `No strike-volume data available for ${date}.`;
       liquidityChart.hidden = true;
       return;
     }
 
+    const traded = [...row.traded.puts, ...row.traded.calls];
+    if (!traded.length) {
+      liquidityStatus.textContent = `${date} · No trades for ${row.Expiration_Month}.`;
+      liquidityChart.hidden = true;
+      return;
+    }
     liquidityChart.hidden = false;
-    const strikes = counts[0].map((_, i) => first + i * 500);
-    const end = first + strikes.length * 500;
+    const minStrike = Math.min(...traded), maxStrike = Math.max(...traded);
+    const first = Math.floor(minStrike / 500) * 500;
+    const end = Math.floor(maxStrike / 500) * 500 + 500;
+    const startBin = (first - binOrigin) / 500, endBin = (end - binOrigin) / 500;
+    const strikes = Array.from({ length: endBin - startBin }, (_, i) => first + i * 500);
     const intervals = strikes.map(start => `[${start.toLocaleString("en-US")}, ${(start + 500).toLocaleString("en-US")})`);
     const lines = [];
     for (const side of ivSides) {
-      const points = curve?.[side.key].filter(([strike]) => strike >= first && strike < end);
+      const points = curve?.[side.key].filter(([strike]) => strike >= minStrike && strike <= maxStrike &&
+        curveVolume?.traded[side.key].has(strike));
       if (!points?.length) continue;
       lines.push({
         type: "scatter", mode: "lines+markers", name: `OTM ${side.name.toLowerCase()} IV`,
@@ -481,12 +508,12 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     // Plotly paints the overlay axis after the base axis. Keep volumes in front of IV.
     const bars = ivSides.map((side, i) => ({
       type: "bar", name: side.name + " volume", marker: { color: side.color }, legendrank: i,
-      x: strikes.map(start => start + (i === 0 ? 149 : 351)), width: 185, y: counts[i],
+      x: strikes.map(start => start + (i === 0 ? 149 : 351)), width: 185, y: counts[i].slice(startBin, endBin),
       customdata: intervals, yaxis: lines.length ? "y2" : "y",
       hovertemplate: `Strike: %{customdata}<br>${side.name}: %{y:,.0f} contracts<extra></extra>`
     }));
     const ivLabel = curve ? `IV: TXF ${curve.futures_contract} (expires ${curve.expiry})` +
-      (lines.length ? "" : " · No IV strikes in range") : (loading ? "Loading IV…" : "No TXF IV available");
+      (lines.length ? "" : " · No traded IV points in range") : (loading ? "Loading IV…" : "No TXF IV available");
     liquidityStatus.textContent = `${date} · Put ${row.Put_Volume.toLocaleString("en-US")} · Call ${row.Call_Volume.toLocaleString("en-US")} · ${ivLabel}`;
     const volumeAxis = { title: "Traded volume (contracts)", side: "left", rangemode: "tozero", tickformat: ",d" };
     ObservatoryCharts.react(liquidityChart, [...lines, ...bars], {
@@ -514,12 +541,16 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
   }
 
   const signedPoints = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0, signDisplay: "exceptZero"
+  });
+  const signedPercent = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: "exceptZero"
   });
-  function renderSnapshot(date, change, front, counts) {
+  function renderSnapshot(date, change, changePct, front, counts) {
     document.getElementById("snapshot-metrics").setAttribute("aria-label", `Market snapshot for ${date}`);
     const points = document.getElementById("snapshot-change");
-    points.textContent = Number.isFinite(change) ? signedPoints.format(change) : "—";
+    document.getElementById("snapshot-points").textContent = Number.isFinite(change) ? signedPoints.format(change) : "—";
+    document.getElementById("snapshot-pct").textContent = Number.isFinite(changePct) ? `(${signedPercent.format(changePct)}%)` : "";
     points.dataset.direction = change > 0 ? "up" : change < 0 ? "down" : "";
     const percent = value => Number.isFinite(value) ? `${value.toFixed(2)}%` : "—";
     const iv = document.getElementById("snapshot-iv");
@@ -530,7 +561,7 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
   }
 
   // Fetch volume once for both the snapshot and market history.
-  const volumeData = fetch(`${rawData}/option_volume_history.csv?schema=strike-bins`, { cache: "no-cache" })
+  const volumeData = fetch(`${rawData}/option_volume_history.csv?schema=traded-strikes`, { cache: "no-cache" })
     .then(response => {
       if (!response.ok) throw new Error("Option volume history unavailable");
       return response.text();
@@ -538,7 +569,7 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     .then(parseVolumeCsv)
     .catch(error => { console.warn(error); return []; });
   const marketByDate = volumeData.then(sumMarketCounts);
-  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json?fields=ohlc-change`, { cache: "no-cache" })
+  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json?fields=ohlc-change-pct`, { cache: "no-cache" })
     .then(response => {
       if (!response.ok) throw new Error("TAIEX history unavailable");
       return response.json();
@@ -586,13 +617,10 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
       ivSlider.max = slider.max;
       ivSlider.disabled = false;
 
-      dateSelect.replaceChildren(...allDates.map(date => {
-        const option = document.createElement("option");
-        option.value = date;
-        option.textContent = date;
-        return option;
-      }));
-      dateSelect.disabled = false;
+      for (const { select } of dateControls) {
+        select.replaceChildren(...allDates.map(date => new Option(date, date)));
+        select.disabled = false;
+      }
 
       startLabel.textContent =
         allDates[0];
@@ -606,8 +634,9 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
       let selectedIv = null;
       let ivLoading = false;
       function updateLiquidity() {
+        const curve = selectedIv?.TX?.[0];
         renderLiquidity(daily.find(row => row.Expiration_Month === expirySelect.value),
-          dateSelect.value, selectedIv?.TX?.[0], ivLoading);
+          dateSelect.value, curve, daily.find(row => row.Expiration_Month === curve?.option_contract), ivLoading);
       }
       expirySelect.addEventListener("change", updateLiquidity);
 
@@ -621,14 +650,17 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
         ivSlider.value = slider.value;
         ivSlider.setAttribute("aria-valuetext", selectedDate);
         document.getElementById("iv-selected-date").textContent = selectedDate;
-        dateSelect.value = selectedDate;
-        previousDate.disabled = index === 0;
-        nextDate.disabled = index === allDates.length - 1;
+        for (const { select, prev, next } of dateControls) {
+          select.value = selectedDate;
+          prev.disabled = index === 0;
+          next.disabled = index === allDates.length - 1;
+        }
 
         const term = rows.filter(row => row.Date === selectedDate)
           .sort((a, b) => a.Days_to_Exp - b.Days_to_Exp || a.Expiration_Date.localeCompare(b.Expiration_Date));
         renderTermStructure(term, selectedDate);
-        renderSnapshot(selectedDate, indexHistory.taiex_change_points?.[selectedDate], term[0], countsByDate.get(selectedDate));
+        renderSnapshot(selectedDate, indexHistory.taiex_change_points?.[selectedDate],
+          indexHistory.taiex_change_pct?.[selectedDate], term[0], countsByDate.get(selectedDate));
 
         daily = volumeRows.filter(row => row.Date === selectedDate)
           .sort((a, b) => a.Expiration_Date.localeCompare(b.Expiration_Date)
@@ -670,20 +702,16 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
         updateFromSlider();
       });
 
-      dateSelect.addEventListener("change", () => {
-        const index = allDates.indexOf(dateSelect.value);
-        if (index < 0) return;
+      function selectDay(index) {
+        if (index < 0 || index >= allDates.length) return;
         slider.value = String(index);
         updateFromSlider();
-      });
-      previousDate.addEventListener("click", () => {
-        slider.value = String(Math.max(0, Number(slider.value) - 1));
-        updateFromSlider();
-      });
-      nextDate.addEventListener("click", () => {
-        slider.value = String(Math.min(allDates.length - 1, Number(slider.value) + 1));
-        updateFromSlider();
-      });
+      }
+      for (const { select, prev, next } of dateControls) {
+        select.addEventListener("change", () => selectDay(select.selectedIndex));
+        prev.addEventListener("click", () => selectDay(select.selectedIndex - 1));
+        next.addEventListener("click", () => selectDay(select.selectedIndex + 1));
+      }
 
       updateFromSlider();
     })
@@ -713,9 +741,9 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
       liquidityStatus.textContent = "Strike-volume history could not be loaded.";
 
       slider.disabled = true;
-      dateSelect.disabled = true;
-      previousDate.disabled = true;
-      nextDate.disabled = true;
+      for (const { select, prev, next } of dateControls) {
+        select.disabled = prev.disabled = next.disabled = true;
+      }
       ivSlider.disabled = true;
       renderIvPanels(null, "", false);
     });
@@ -896,7 +924,8 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
         yaxis: { title: "Implied volatility (%)" },
         shapes: [{ type: "line", xref: "x", yref: "paper", x0: curve.forward, x1: curve.forward,
           y0: 0, y1: 1, line: { color: "#888", width: 1.5, dash: "dash" } }],
-        legend: { orientation: "h", x: 0, y: -.27 }, hovermode: "closest", dragmode: "zoom"
+        legend: { orientation: "h", x: 0, yref: "container", y: 0, yanchor: "bottom" },
+        hovermode: "closest", dragmode: "zoom"
       }, { responsive: true, displayModeBar: false, displaylogo: false });
       ivReset.disabled = false;
     }

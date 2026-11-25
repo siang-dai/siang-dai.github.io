@@ -108,6 +108,8 @@ body.observatory-page {
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .observatory-page #snapshot-change[data-direction="up"] { color: #ad3933; }
+.observatory-page #snapshot-metrics #snapshot-change { white-space: normal; }
+.observatory-page #snapshot-pct { display: inline-block; font-size: .82rem; }
 .observatory-page #snapshot-change[data-direction="down"] { color: #18724e; }
 .observatory-page.quarto-dark #snapshot-change[data-direction="up"] { color: #ff918b; }
 .observatory-page.quarto-dark #snapshot-change[data-direction="down"] { color: #69d7a5; }
@@ -129,13 +131,14 @@ body.observatory-page {
 .observatory-page #liquidity-expiration { margin-left: .35rem; font-weight: normal; }
 .observatory-page #liquidity-status { margin: .25rem 0 0; font-size: .8rem; }
 .observatory-page #liquidity-chart { width: 100%; height: clamp(300px, 39vh, 390px); }
-.observatory-page .txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1.75rem; }
-.observatory-page #iv-grid { margin-top: 1rem; }
+.observatory-page .txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem 1.25rem; }
+.observatory-page #iv-grid { margin-top: .55rem; }
+.observatory-page #iv-reset { display: block; margin: .5rem 0 0 auto; }
 .observatory-page #iv-end-date { text-align: right; }
 .observatory-page .txo-iv-panel { min-width: 0; }
-.observatory-page .txo-iv-panel h4 { font-size: .95rem; font-weight: 600; margin: 0 0 .45rem; line-height: 1.5; }
-.observatory-page .txo-iv-details { font-size: .8rem; opacity: .8; margin-bottom: .7rem; min-height: 2.5em; line-height: 1.6; }
-.observatory-page .txo-iv-plot { width: 100%; height: 340px; }
+.observatory-page .txo-iv-panel h4 { font-size: .95rem; font-weight: 600; margin: 0 0 .15rem; line-height: 1.4; }
+.observatory-page .txo-iv-details { font-size: .8rem; opacity: .8; margin: 0; line-height: 1.4; }
+.observatory-page .txo-iv-plot { width: 100%; height: clamp(205px, 26vh, 245px); }
 /* The chart reserves space above its axes for these existing controls. */
 .observatory-page .js-plotly-plot .modebar-container { top: 0 !important; right: 0 !important; }
 .observatory-page .js-plotly-plot .modebar {
@@ -172,7 +175,7 @@ body.observatory-page {
     height: clamp(195px, calc(50svh - 176px), 240px);
   }
   .observatory-page .txo-history-navigation { width: 204px; }
-  .observatory-page #vix-history-date { font-size: 16px; }
+  .observatory-page .txo-history-navigation select { font-size: 16px; }
   .observatory-page main.content { padding-top: .7rem; }
   .observatory-page main > section:first-of-type > h2 { font-size: 1.35rem; }
   .observatory-page main h2 { font-size: 1.25rem; }
@@ -181,8 +184,7 @@ body.observatory-page {
   .observatory-page .spx-horizon-label { flex: 1 1 100%; }
   .observatory-page :is(#spx-horizon, #market-lookback) { font-size: 16px; width: 100%; }
   .observatory-page .txo-iv-toolbar { align-items: start; }
-  .observatory-page .txo-iv-grid { grid-template-columns: minmax(0, 1fr); gap: 1.7rem; }
-  .observatory-page .txo-iv-details { min-height: 0; }
+  .observatory-page .txo-iv-grid { grid-template-columns: minmax(0, 1fr); gap: .85rem; }
   .observatory-page #spx-vix-term-chart { height: 360px; }
   .observatory-page :is(.vix-slider-labels, .spx-slider-labels) { font-size: .71rem; gap: .3rem; }
   .observatory-page :is(#vix-selected-date, #iv-selected-date, #spx-selected-date) { font-size: .76rem; padding: .3rem .4rem; }
