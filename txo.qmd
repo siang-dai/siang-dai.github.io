@@ -12,7 +12,7 @@ body-classes: observatory-page txo-page
 
 ## VIX term structure and option volume {#vix-volatility-index-term-structure}
 
-The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and volume by expiration. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
+The data is downloaded from the [Taiwan Futures Exchange](https://www.taifex.com.tw/cht/3/dlOptDailyMarketView). Select a trading date to see its VIX term structure and option volume. In Liquidity by strike, choose an expiration to compare call and put volume across 500-point strike intervals. The VIX methodology is based on Cboe VIX, see [Cboe Volatility Index Mathematics Methodology](https://cdn.cboe.com/resources/indices/Cboe_Volatility_Index_Mathematics_Methodology.pdf).
 
 Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the best bid by more than 50 index points **and** is more than 10 times the bid. Volume includes both sessions.
 
@@ -22,13 +22,13 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
     <label for="vix-history-date">Trading date</label>
     <div class="txo-history-navigation">
       <button id="vix-prev-date" type="button" disabled aria-label="Previous trading day" title="Previous trading day">←</button>
-      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart">
+      <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart liquidity-chart">
         <option>Loading dates…</option>
       </select>
       <button id="vix-next-date" type="button" disabled aria-label="Next trading day" title="Next trading day">→</button>
     </div>
   </div>
-  <p id="vix-history-help" class="visually-hidden">Drag the slider or use the arrows to change the trading date for both charts.</p>
+  <p id="vix-history-help" class="visually-hidden">Drag the slider or use the arrows to change the trading date for all three charts.</p>
 
   <div class="vix-slider-wrap">
     <input
@@ -39,9 +39,9 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       step="1"
       value="0"
       disabled
-      aria-label="Select trading date for VIX and option volume"
+      aria-label="Select trading date for VIX, option volume and liquidity"
       aria-describedby="vix-history-help"
-      aria-controls="vix-term-chart vix-volume-chart"
+      aria-controls="vix-term-chart vix-volume-chart liquidity-chart"
     >
 
     <div class="vix-slider-labels">
@@ -59,6 +59,18 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
     <div class="txo-history-panel panel-volume">
       <p id="vix-volume-status">Loading TXO option volume…</p>
       <div id="vix-volume-chart"></div>
+    </div>
+    <div class="txo-liquidity" id="liquidity">
+      <div class="txo-history-controls">
+        <h3 class="observatory-chart-title">Liquidity by strike</h3>
+        <label for="liquidity-expiration">Expiration
+          <select id="liquidity-expiration" disabled aria-controls="liquidity-chart">
+            <option>Loading expirations…</option>
+          </select>
+        </label>
+      </div>
+      <p id="liquidity-status" role="status"></p>
+      <div id="liquidity-chart"></div>
     </div>
   </div>
 </div>
@@ -188,6 +200,10 @@ Only MXF futures contracts with matching expiration dates are included. The char
   const volumeStatus =
     document.getElementById("vix-volume-status");
 
+  const expirySelect = document.getElementById("liquidity-expiration");
+  const liquidityChart = document.getElementById("liquidity-chart");
+  const liquidityStatus = document.getElementById("liquidity-status");
+
   function parseCsv(text) {
     const lines = text.trim().split(/\r?\n/);
     const headers = lines[0].split(",");
@@ -244,6 +260,9 @@ Only MXF futures contracts with matching expiration dates are included. The char
           Date: String(row.Date || "").trim(),
           Expiration_Month: String(row.Expiration_Month || "").trim(),
           Expiration_Date: row.Expiration_Date?.trim(),
+          First_Strike_Bin: row.First_Strike_Bin?.trim() ? Number(row.First_Strike_Bin) : NaN,
+          Call_Bins_500: row.Call_Bins_500?.trim(),
+          Put_Bins_500: row.Put_Bins_500?.trim(),
           ...Object.fromEntries(["Call_Volume", "Put_Volume", "Call_OI", "Put_OI"].map(key =>
             [key, row[key]?.trim() ? Number(row[key]) : NaN]
           ))
@@ -355,12 +374,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
     status.textContent = `${daily.length} expirations`;
   }
 
-  function renderVolume(volumeRows, date) {
-    const daily = volumeRows
-      .filter(row => row.Date === date)
-      .sort((a, b) => a.Expiration_Date.localeCompare(b.Expiration_Date)
-        || a.Expiration_Month.localeCompare(b.Expiration_Month));
-
+  function renderVolume(daily, date) {
     if (!daily.length) {
       renderEmptyHistoryChart(volumeChart, "Option volume by expiration",
         "No option-volume data recorded for this date.");
@@ -440,6 +454,37 @@ Only MXF futures contracts with matching expiration dates are included. The char
       `${totalVolume.toLocaleString()} contracts`;
   }
 
+  function renderLiquidity(row, date) {
+    const first = row?.First_Strike_Bin;
+    const sides = ["Call", "Put"];
+    const counts = sides.map(side => row?.[side + "_Bins_500"]?.split(/\s+/).map(Number) ?? []);
+    const complete = Number.isSafeInteger(first) && first >= 0 && first % 500 === 0 &&
+      counts[0].length > 0 && counts[0].length === counts[1].length &&
+      counts.every((values, i) => values.every(n => Number.isSafeInteger(n) && n >= 0) &&
+        values.reduce((sum, n) => sum + n, 0) === row[sides[i] + "_Volume"]);
+    if (!complete) {
+      liquidityStatus.textContent = `No strike-volume data available for ${date}.`;
+      liquidityChart.hidden = true;
+      return;
+    }
+
+    liquidityChart.hidden = false;
+    const strikes = counts[0].map((_, i) => first + i * 500);
+    const intervals = strikes.map(start => `[${start.toLocaleString("en-US")}, ${(start + 500).toLocaleString("en-US")})`);
+    const traces = sides.map((side, i) => ({
+      type: "bar", name: side, x: strikes, y: counts[i], customdata: intervals,
+      hovertemplate: `Strike: %{customdata}<br>${side}: %{y:,.0f} contracts<extra></extra>`
+    }));
+    liquidityStatus.textContent = `${date} · Call ${row.Call_Volume.toLocaleString("en-US")} · Put ${row.Put_Volume.toLocaleString("en-US")}`;
+    ObservatoryCharts.react(liquidityChart, traces, {
+      barmode: "group", hovermode: "closest",
+      xaxis: { type: "linear", title: "Strike (500-point bins, lower bound)", tickformat: ",d" },
+      yaxis: { title: "Traded volume (contracts)", rangemode: "tozero", tickformat: ",d" },
+      legend: { orientation: "h", x: 1, xanchor: "right", y: 1, yanchor: "top", bgcolor: "rgba(0,0,0,0)" },
+      margin: { b: 44 }
+    }, { responsive: true, displaylogo: false, scrollZoom: false });
+  }
+
   function sumMarketCounts(rows) {
     const daily = new Map();
     for (const row of rows) {
@@ -451,7 +496,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
   }
 
   // Fetch volume once for both the snapshot and market history.
-  const volumeData = fetch(`${rawData}/option_volume_history.csv`, { cache: "no-cache" })
+  const volumeData = fetch(`${rawData}/option_volume_history.csv?schema=strike-bins`, { cache: "no-cache" })
     .then(response => {
       if (!response.ok) throw new Error("Option volume history unavailable");
       return response.text();
@@ -511,6 +556,12 @@ Only MXF futures contracts with matching expiration dates are included. The char
       endLabel.textContent =
         allDates[allDates.length - 1];
 
+      let daily = [];
+      function updateLiquidity() {
+        renderLiquidity(daily.find(row => row.Expiration_Month === expirySelect.value), dateSelect.value);
+      }
+      expirySelect.addEventListener("change", updateLiquidity);
+
       function updateFromSlider() {
         const index = Number(slider.value);
         const selectedDate = allDates[index];
@@ -527,7 +578,17 @@ Only MXF futures contracts with matching expiration dates are included. The char
           selectedDate
         );
 
-        renderVolume(volumeRows, selectedDate);
+        daily = volumeRows.filter(row => row.Date === selectedDate)
+          .sort((a, b) => a.Expiration_Date.localeCompare(b.Expiration_Date)
+            || a.Expiration_Month.localeCompare(b.Expiration_Month));
+        renderVolume(daily, selectedDate);
+        const previousExpiry = expirySelect.value;
+        const options = daily.filter(row => row.Call_Bins_500 && row.Put_Bins_500).map(row =>
+          new Option(`${row.Expiration_Month} · ${row.Expiration_Date}`, row.Expiration_Month));
+        expirySelect.replaceChildren(...(options.length ? options : [new Option("No expirations", "")]));
+        expirySelect.disabled = options.length === 0;
+        if (options.some(option => option.value === previousExpiry)) expirySelect.value = previousExpiry;
+        updateLiquidity();
       }
 
       slider.addEventListener(
@@ -572,6 +633,10 @@ Only MXF futures contracts with matching expiration dates are included. The char
 
       volumeStatus.textContent =
         "Option-volume history could not be loaded.";
+      expirySelect.replaceChildren(new Option("No expirations", ""));
+      expirySelect.disabled = true;
+      liquidityChart.hidden = true;
+      liquidityStatus.textContent = "Strike-volume history could not be loaded.";
 
       slider.disabled = true;
       dateSelect.disabled = true;

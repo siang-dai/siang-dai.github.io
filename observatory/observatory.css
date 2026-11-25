@@ -31,14 +31,14 @@ body.observatory-page {
   display: flex; flex-direction: column; align-items: stretch; gap: .35rem;
   font-size: .85rem; margin: 0; min-width: 150px;
 }
-.observatory-page :is(#spx-horizon, #market-lookback), .observatory-page .txo-iv-reset {
+.observatory-page :is(#spx-horizon, #market-lookback, #liquidity-expiration), .observatory-page .txo-iv-reset {
   font: inherit; color: inherit; background: var(--bs-body-bg, transparent);
   border: 1px solid var(--observatory-line); border-radius: .4rem;
   padding: .5rem .75rem; min-height: 42px;
 }
 .observatory-page .txo-iv-reset { font-size: .85rem; flex-shrink: 0; cursor: pointer; }
 .observatory-page .txo-iv-reset:disabled { opacity: .5; cursor: default; }
-.observatory-page :is(#spx-horizon, #market-lookback, .txo-iv-reset, input[type="range"]):focus-visible {
+.observatory-page :is(#spx-horizon, #market-lookback, #liquidity-expiration, .txo-iv-reset, input[type="range"]):focus-visible {
   outline: 3px solid #78a7c8; outline-offset: 3px;
 }
 .observatory-page .observatory-chart-title {
@@ -103,6 +103,12 @@ body.observatory-page {
   grid-area: stats; margin: 0; border: 0; padding: 0; font-size: .8rem;
 }
 .observatory-page .txo-history-card .observatory-chart-title { grid-area: title; margin: 0; }
+.observatory-page .txo-liquidity {
+  grid-column: 1 / -1; min-width: 0; border-top: 1px solid var(--observatory-line); padding-top: .6rem;
+}
+.observatory-page #liquidity-expiration { margin-left: .35rem; font-weight: normal; }
+.observatory-page #liquidity-status { margin: .25rem 0 0; font-size: .8rem; }
+.observatory-page #liquidity-chart { width: 100%; height: clamp(250px, 34vh, 350px); }
 .observatory-page .txo-iv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1.75rem; }
 .observatory-page .txo-iv-panel { min-width: 0; }
 .observatory-page .txo-iv-panel h4 { font-size: .95rem; font-weight: 600; margin: 0 0 .45rem; line-height: 1.5; }
