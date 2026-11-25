@@ -61,7 +61,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       <div id="vix-volume-chart"></div>
     </div>
   </div>
-  <div class="txo-liquidity" id="liquidity">
+  <div class="txo-liquidity mt-2" id="liquidity">
     <div class="txo-history-controls">
       <h3 class="observatory-chart-title">Liquidity by strike</h3>
       <label for="liquidity-expiration">Expiration
