@@ -73,7 +73,7 @@ Each window ends on the latest shared trading day. The [TAIFEX put/call ratios](
   <div class="spx-toolbar">
     <p id="market-window-status" role="status">Loading market history…</p>
     <label class="spx-horizon-label">Lookback
-      <select id="market-lookback" aria-controls="front-vix-chart taiex-chart volume-ratio-chart oi-ratio-chart" disabled>
+      <select id="market-lookback" aria-controls="taiex-chart front-vix-chart volume-ratio-chart oi-ratio-chart" disabled>
         <option value="30" selected>1M</option>
         <option value="60">2M</option>
         <option value="90">3M</option>
@@ -82,16 +82,16 @@ Each window ends on the latest shared trading day. The [TAIFEX put/call ratios](
   </div>
   <div class="txo-history-grid" id="market-history-grid">
     <div class="txo-history-panel">
+      <p id="taiex-status"></p>
+      <div id="taiex-chart"></div>
+    </div>
+    <div class="txo-history-panel">
       <p id="front-vix-status"></p>
       <div id="front-vix-chart"></div>
     </div>
     <div class="txo-history-panel">
       <p id="volume-ratio-status"></p>
       <div id="volume-ratio-chart"></div>
-    </div>
-    <div class="txo-history-panel">
-      <p id="taiex-status"></p>
-      <div id="taiex-chart"></div>
     </div>
     <div class="txo-history-panel">
       <p id="oi-ratio-status"></p>
@@ -140,7 +140,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
 (() => {
   const plotlyReady = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/plotly.js-basic-dist-min@4.1.1/plotly-basic.min.js";
+    script.src = "https://cdn.jsdelivr.net/npm/plotly.js-finance-dist-min@4.1.1/plotly-finance.min.js";
     script.async = true;
     script.onload = resolve;
     script.onerror = () => reject(new Error("Plotly could not be loaded"));
@@ -321,7 +321,8 @@ Only MXF futures contracts with matching expiration dates are included. The char
         gridcolor: "rgba(127,127,127,0.22)"
       },
       yaxis: {
-        title: "Annualized IV (%)",
+        title: "Estimated VIX",
+        ticksuffix: "%",
         gridcolor: "rgba(127,127,127,0.22)"
       },
       margin: {
@@ -583,30 +584,41 @@ Only MXF futures contracts with matching expiration dates are included. The char
   const lookback = document.getElementById("market-lookback");
   const windowStatus = document.getElementById("market-window-status");
 
-  function drawHistory(id, title, axisTitle, range, days, values, customdata, hovertemplate, ratio = false) {
+  function historyLine(days, values, customdata, hovertemplate) {
+    return {
+      type: "scatter", mode: "lines+markers", x: days.map(row => row.Date), y: values,
+      marker: { size: 4 }, customdata,
+      hovertemplate: "%{x|%Y-%m-%d}<br>" + hovertemplate + "<extra></extra>"
+    };
+  }
+
+  function drawHistory(id, title, axisTitle, range, trace, ratioAxis) {
     const plot = document.getElementById(id + "-chart");
-    const last = days.at(-1)?.Date === range[1] ? values.at(-1) : null;
+    const values = trace.close ?? trace.y;
+    const last = trace.x.at(-1) === range[1] ? values.at(-1) : null;
+    const suffix = id === "taiex" ? "" : "%";
     document.getElementById(id + "-status").textContent = Number.isFinite(last)
-      ? last.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (axisTitle.includes("%") ? "%" : "")
+      ? last.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + suffix
       : "Unavailable";
     if (!values.some(Number.isFinite)) {
       renderEmptyHistoryChart(plot, title, "No data for this period.");
       return;
     }
-    ObservatoryCharts.react(plot, [{
-      type: "scatter", mode: "lines+markers", x: days.map(row => row.Date), y: values,
-      marker: { size: 4 }, customdata, hovertemplate: "%{x|%Y-%m-%d}<br>" + hovertemplate + "<extra></extra>"
-    }], {
+    // Half-day padding keeps both ends of each candle visible on the shared time scale.
+    const paddedRange = range.map((day, i) =>
+      new Date(Date.parse(day + "T00:00:00Z") + (i ? 12 : -12) * 3600000).toISOString().slice(0, 19)
+    );
+    ObservatoryCharts.react(plot, [trace], {
       title: { text: title },
-      xaxis: { type: "date", range, tickformat: "%b %d", nticks: 5 },
-      yaxis: { title: axisTitle },
-      shapes: ratio ? [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 100, y1: 100,
-        line: { width: 1, dash: "dot", color: "rgba(127,127,127,.65)" }, layer: "below" }] : [],
+      xaxis: { type: "date", range: paddedRange, tickformat: "%b %d", nticks: 5, rangeslider: { visible: false } },
+      yaxis: { title: axisTitle, ticksuffix: suffix, ...ratioAxis },
+      shapes: ratioAxis ? [{ type: "line", xref: "paper", yref: "y", x0: 0, x1: 1, y0: 100, y1: 100,
+        line: { width: 1.5, color: "#888" }, layer: "below" }] : [],
       margin: { b: 40 }, showlegend: false
     }, { responsive: true, displaylogo: false });
   }
 
-  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json`, { cache: "no-cache" })
+  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json?fields=ohlc`, { cache: "no-cache" })
     .then(response => {
       if (!response.ok) throw new Error("TAIEX history unavailable");
       return response.json();
@@ -632,17 +644,35 @@ Only MXF futures contracts with matching expiration dates are included. The char
       const front = indexRows.filter(inWindow);
       const activity = market.filter(inWindow);
       windowStatus.textContent = `${start} – ${lastDay} · ${length} calendar days`;
-      drawHistory("front-vix", "Front-expiry VIX", "Annualized IV (%)", range, front,
-        front.map(row => row.Front_VIX), front.map(row => row.Contract), "%{customdata}<br>VIX: %{y:.2f}%");
-      drawHistory("taiex", "TAIEX close", "Index points", range, front,
-        front.map(row => row.TAIEX_Close), undefined, "TAIEX: %{y:,.2f}");
-      for (const [measure, id, title] of [
-        ["Volume", "volume-ratio", "Put/Call ratio · Volume"], ["OI", "oi-ratio", "Put/Call ratio · Open interest"]
-      ]) {
+      const candles = front.filter(row =>
+        [row.TAIEX_Open, row.TAIEX_High, row.TAIEX_Low, row.TAIEX_Close].every(Number.isFinite)
+      );
+      drawHistory("taiex", "TAIEX · Daily candles", "Index points", range, {
+        type: "candlestick", name: "TAIEX", x: candles.map(row => row.Date),
+        open: candles.map(row => row.TAIEX_Open), high: candles.map(row => row.TAIEX_High),
+        low: candles.map(row => row.TAIEX_Low), close: candles.map(row => row.TAIEX_Close),
+        increasing: { line: { color: "#c44943" }, fillcolor: "#c44943" },
+        decreasing: { line: { color: "#268366" }, fillcolor: "#268366" }
+      });
+      drawHistory("front-vix", "Front-expiry VIX", "Estimated VIX", range,
+        historyLine(front, front.map(row => row.Front_VIX), front.map(row => row.Contract), "%{customdata}<br>VIX: %{y:.2f}%"));
+
+      const ratios = [
+        ["Volume", "volume-ratio", "Put/Call ratio · Traded Volume"],
+        ["OI", "oi-ratio", "Put/Call ratio · Open interest"]
+      ].map(([measure, id, title]) => {
         const counts = activity.map(row => [row["Put_" + measure], row["Call_" + measure]]);
-        drawHistory(id, title, "Put / Call (%)", range, activity,
-          counts.map(([put, call]) => call > 0 ? 100 * put / call : null), counts,
-          "Put/Call: %{y:.2f}%<br>Put: %{customdata[0]:,.0f}<br>Call: %{customdata[1]:,.0f}", true);
+        const values = counts.map(([put, call]) => call > 0 ? 100 * put / call : null);
+        return { id, title, trace: historyLine(activity, values, counts,
+          "Put/Call: %{y:.2f}%<br>Put: %{customdata[0]:,.0f}<br>Call: %{customdata[1]:,.0f}") };
+      });
+      const levels = [100, ...ratios.flatMap(series => series.trace.y.filter(Number.isFinite))];
+      const low = Math.min(...levels), high = Math.max(...levels);
+      const padding = Math.max(1, (high - low) * 0.06);
+      const ratioAxis = { range: [Math.max(0, low - padding), high + padding],
+        tick0: 100, fixedrange: true, nticks: 5 };
+      for (const { id, title, trace } of ratios) {
+        drawHistory(id, title, "Put / Call (%)", range, trace, ratioAxis);
       }
     }
     lookback.disabled = false;
