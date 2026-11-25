@@ -97,6 +97,8 @@ Each window ends on the latest shared trading day. The [TAIFEX put/call ratios](
         <option value="30" selected>1M</option>
         <option value="60">2M</option>
         <option value="90">3M</option>
+        <option value="180">6M</option>
+        <option value="365">1Y</option>
       </select>
     </label>
   </div>
@@ -569,7 +571,7 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     .then(parseVolumeCsv)
     .catch(error => { console.warn(error); return []; });
   const marketByDate = volumeData.then(sumMarketCounts);
-  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json?fields=ohlc-change-pct`, { cache: "no-cache" })
+  const indexData = fetch(`${rawOutput}/latest_front_vix_vs_taiex.json?fields=market-year`, { cache: "no-cache" })
     .then(response => {
       if (!response.ok) throw new Error("TAIEX history unavailable");
       return response.json();
@@ -787,7 +789,11 @@ The top row shows the two nearest eligible expirations matched to TAIEX futures 
     }, { responsive: true, displaylogo: false });
   }
 
-  Promise.all([indexData, marketByDate, plotlyReady]).then(([{ data: indexRows }, countsByDate]) => {
+  Promise.all([indexData, marketByDate, plotlyReady]).then(([{ data: indexRows }, snapshotCounts]) => {
+    const countsByDate = new Map(indexRows
+      .filter(row => ["Call_Volume", "Put_Volume", "Call_OI", "Put_OI"].every(key => Number.isFinite(row[key])))
+      .map(row => [row.Date, row]));
+    for (const [date, row] of snapshotCounts) countsByDate.set(date, row);
     const market = [...countsByDate.values()].sort((a, b) => a.Date.localeCompare(b.Date));
     const end = indexRows.filter(row => countsByDate.has(row.Date)).at(-1)?.Date;
     // If one feed is unavailable, keep the other histories usable.
