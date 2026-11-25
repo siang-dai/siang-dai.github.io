@@ -18,7 +18,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
 ```{=html}
 <div class="project-card vix-interactive-card txo-history-card">
   <div class="txo-history-controls">
-    <label for="vix-history-date">Trading date · both charts</label>
+    <label for="vix-history-date">Trading date</label>
     <div class="txo-history-navigation">
       <button id="vix-prev-date" type="button" disabled aria-label="Previous trading day" title="Previous trading day">←</button>
       <select id="vix-history-date" disabled aria-controls="vix-term-chart vix-volume-chart">
@@ -27,7 +27,7 @@ Our VIX estimate excludes end-of-day option quotes when the best ask exceeds the
       <button id="vix-next-date" type="button" disabled aria-label="Next trading day" title="Next trading day">→</button>
     </div>
   </div>
-  <p id="vix-history-help" class="txo-history-help">Drag the slider or use the arrows to browse recorded trading days. Both charts show the same selected date.</p>
+  <p id="vix-history-help" class="visually-hidden">Drag the slider or use the arrows to change the trading date for both charts.</p>
 
   <div class="vix-slider-wrap">
     <input
@@ -296,14 +296,14 @@ Only MXF futures contracts with matching expiration dates are included. The char
         gridcolor: "rgba(127,127,127,0.22)"
       },
       yaxis: {
-        title: "Annualized implied volatility (%)",
+        title: "Annualized IV (%)",
         gridcolor: "rgba(127,127,127,0.22)"
       },
       margin: {
         l: 70,
         r: 25,
         t: 70,
-        b: 65
+        b: 42
       },
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
@@ -326,9 +326,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
       }
     );
 
-    status.textContent =
-      `Trading date: ${date} · ` +
-      `${daily.length} expirations`;
+    status.textContent = `${daily.length} expirations`;
   }
 
   function renderVolume(volumeRows, date, expirationDates) {
@@ -394,7 +392,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
         l: 80,
         r: 30,
         t: 60,
-        b: 75
+        b: 46
       },
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
@@ -423,7 +421,6 @@ Only MXF futures contracts with matching expiration dates are included. The char
     );
 
     volumeStatus.textContent =
-      `Trading date: ${date} · ` +
       `${daily.length} expirations · ` +
       `total Call + Put volume: ` +
       `${totalVolume.toLocaleString()}`;
@@ -520,6 +517,7 @@ Only MXF futures contracts with matching expiration dates are included. The char
         if (!selectedDate) return;
 
         selectedLabel.textContent = selectedDate;
+        slider.setAttribute("aria-valuetext", selectedDate);
         dateSelect.value = selectedDate;
         slider.setAttribute("aria-valuetext", selectedDate);
         previousDate.disabled = index === 0;
